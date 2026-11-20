@@ -57,7 +57,7 @@ function errText(e){
   const c=(e&&e.code)||'';
   if(c.includes('permission-denied')) return 'You don’t have permission to do that. Sign in again and retry.';
   if(c.includes('unavailable')) return 'You seem to be offline. Check your connection and try again.';
-  if(c.includes('resource-exhausted')) return 'Suki is busy right now. Try again in a minute.';
+  if(c.includes('resource-exhausted')) return 'Renta.ph is busy right now. Try again in a minute.';
   return 'That didn’t save. Check your connection and try again.';
 }
 const authErr = e=>({
@@ -123,7 +123,7 @@ function render(){
   if(S.view==='explore'){
     if(!S.ready&&!S.error) h+='<div class="note">Loading listings…</div>';
     const list=filtered(); const catL=S.cat==='all'?'listings':CATS[S.cat].label.toLowerCase();
-    if(S.ready&&!S.listings.some(x=>x.active!==false)) h+=`<div class="note"><strong>Suki is brand new.</strong> These are examples of what listings look like. Post the first real one under My listings.</div>`;
+    if(S.ready&&!S.listings.some(x=>x.active!==false)) h+=`<div class="note"><strong>Renta.ph is brand new.</strong> These are examples of what listings look like. Post the first real one under My listings.</div>`;
     h+=`<div class="bar"><h2>${S.q?'Results':(S.cat==='all'?'Near you':CATS[S.cat].label)}</h2><span class="muted small num">${list.length} ${catL}${S.city?' in '+esc(S.city):''}</span></div>`;
     h+= list.length?`<div class="grid">${list.map(cardHTML).join('')}</div>`:(S.ready?`<div class="empty">${ICON.explore}<div>No listings match yet.</div><div class="small">Try another area or category, or be the first to post one.</div><a class="btn primary" href="#mine">Post a listing</a></div>`:'');
   } else if(S.view==='saved'){
@@ -242,11 +242,11 @@ function openSignIn(next){
       }catch(x){ btn.disabled=false; err(authErr(x)); } };
   };
   const done=()=>{ closeSheet(); toast('You’re signed in.'); const n=afterSignIn; afterSignIn=null; n&&setTimeout(n,300); };
-  openSheet('Sign in to Suki','',draw);
+  openSheet('Sign in to Renta.ph','',draw);
 }
 function openAccount(){
   const u=S.user;
-  openSheet('Your account',`<div><h3>${esc(u.displayName||'Suki user')}</h3><div class="small muted">${esc(u.email||'')}</div></div>
+  openSheet('Your account',`<div><h3>${esc(u.displayName||'Renta.ph user')}</h3><div class="small muted">${esc(u.email||'')}</div></div>
     ${S.isAdmin?'<div class="note">You’re an admin. You can remove any listing that breaks the rules.</div>':''}
     <div class="row"><a class="btn" href="#mine" data-close>My listings</a><a class="btn" href="#requests" data-close>Requests</a></div>
     <button class="btn danger" id="so">Sign out</button>`,sh=>{
@@ -264,7 +264,7 @@ function openItem(id){
     <div class="price num" style="font-size:22px;padding:0">${peso(it.price)} <span>/ ${esc(UNITS[it.unit]||it.unit)}</span></div>
     <div class="facts"><div class="fact"><b>Area</b>${esc(it.city)}</div><div class="fact"><b>Provider</b>${esc(it.providerName||'Provider')}</div></div>
     ${it.desc?`<div class="desc">${esc(it.desc)}</div>`:''}
-    ${it.example?'<div class="note">This is an example listing to show how Suki works. You can’t book it.</div>':`
+    ${it.example?'<div class="note">This is an example listing to show how Renta.ph works. You can’t book it.</div>':`
     <div class="row">
       ${mine?`<button class="btn" data-edit="${esc(it.id)}">Edit my listing</button>`:`<button class="btn accent" data-req="${esc(id)}">${esc(CATS[k].act)}</button>`}
       ${it.phone&&!mine?`<a class="btn" href="${esc(telHref(it.phone))}">${ICON.phone}<span class="num">${esc(it.phone)}</span></a>`:''}
@@ -417,8 +417,8 @@ function watchUser(u){
 }
 function start(){
   buildShell(); route();
-  const cfg=window.SUKI_FIREBASE;
-  if(!cfg||!cfg.apiKey||cfg.apiKey.startsWith('PASTE')){ S.error='Suki isn’t connected to its database yet. The owner needs to add the Firebase settings in config.js.'; S.ready=true; render(); return; }
+  const cfg=window.RENTA_FIREBASE;
+  if(!cfg||!cfg.apiKey||cfg.apiKey.startsWith('PASTE')){ S.error='Renta.ph isn’t connected to its database yet. The owner needs to add the Firebase settings in config.js.'; S.ready=true; render(); return; }
   const app=initializeApp(cfg); auth=getAuth(app); db=getFirestore(app);
   getRedirectResult(auth).then(r=>{ if(r) toast('You’re signed in.'); }).catch(e=>toast(authErr(e)));
   onAuthStateChanged(auth,u=>{ S.user=u; renderAcct(); watchUser(u); });
