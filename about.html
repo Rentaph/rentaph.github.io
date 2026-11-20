@@ -70,7 +70,7 @@ document.querySelectorAll('[data-support]').forEach(function(el){
 (function(){
   var d=self.RENTA_DONATE||{}, box=document.getElementById('ways'), html='';
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-  [['GCash',d.gcash],['Maya',d.maya]].forEach(function(w){ if(w[1]) html+='<div class="way"><div><b>'+w[0]+'</b><br><span>'+esc(w[1])+'</span>'+(d.name?'<div style="font-size:14px;color:#56606e">'+esc(d.name)+'</div>':'')+'</div><button class="copy" data-copy="'+esc(w[1])+'">Copy number</button></div>'; });
+  [['GCash',d.gcash],['Maya',d.maya]].forEach(function(w){ if(w[1]) html+='<div class="way"><div><b>'+w[0]+'</b><br><span>'+esc(w[1])+'</span>'+(d.name?'<div style="font-size:14px;color:#56606e">'+esc(d.name)+'</div>':'')+'</div><button class="copy" data-copy="'+esc(String(w[1]).replace(/\s/g,''))+'">Copy number</button></div>'; });
   if(d.link) html+='<div class="way"><b>Online</b><a class="btn" href="'+esc(d.link)+'" target="_blank" rel="noopener">Donate online</a></div>';
   if(d.qr) html+='<div class="qr"><img src="'+esc(d.qr)+'" alt="Donation QR code"></div>';
   if(!html) html='<div class="way"><span style="font-size:16px">Donation details are coming soon.</span></div>';
