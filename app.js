@@ -17,6 +17,7 @@ const ICON = {
   saved:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>',
   savedOn:'<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>',
   requests:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg>',
+  guide:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5v.7"/><path d="M12 17h.01"/></svg>',
   mine:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10 12 4l9 6v10H3z"/><path d="M9 20v-6h6v6"/></svg>',
   close:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2"/></svg>',
@@ -222,7 +223,7 @@ function buildShell(){
   $('#brgy').onchange=e=>{S.brgy=e.target.value; if(S.view!=='explore') location.hash='explore'; else render();};
   fillCities();
   $('#q').oninput=e=>{S.q=e.target.value.trim().toLowerCase(); clearTimeout(buildShell.t); buildShell.t=setTimeout(()=>{ if(S.view!=='explore') location.hash='explore'; else render(); },150);};
-  const labels={explore:'Explore',saved:'Saved',requests:'Inbox',mine:'My listings'};
+  const labels={explore:'Explore',saved:'Saved',requests:'Inbox',mine:'My listings',guide:'How it works'};
   document.querySelectorAll('nav.tabs a').forEach(a=>{a.innerHTML=ICON[a.dataset.v]+labels[a.dataset.v];});
   $('#acct').onclick=()=>S.user?openAccount():openSignIn();
   if(window.RentaScene) RentaScene($('#appscene'),{mode:'banner'});
@@ -232,7 +233,7 @@ function route(){
   let h=location.hash.slice(1);
   if(h.startsWith('l-')){ pendingOpen=h.slice(2); history.replaceState(null,'','#explore'); h='explore'; }
   if(h.startsWith('explore-')){ const c=h.slice(8); if(CATS[c]){ S.cat=c; document.querySelectorAll('#cats button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.cat===c)); } history.replaceState(null,'','#explore'); h='explore'; }
-  S.view=['explore','saved','requests','mine'].includes(h)?h:'explore';
+  S.view=['explore','saved','requests','mine','guide'].includes(h)?h:'explore';
   const v=$('#view'); v.classList.add('anim'); clearTimeout(route.t); route.t=setTimeout(()=>v.classList.remove('anim'),1200);
   render(); $('main').scrollTop=0;
 }
@@ -303,6 +304,7 @@ function render(){
     else { const list=S.listings.filter(it=>S.saved.has(it.id));
       h+= list.length?`<div class="grid">${list.map(cardHTML).join('')}</div>`:`<div class="empty">${ICON.saved}<div>Nothing saved yet.</div><div class="small">Tap Save on a listing to keep it here.</div></div>`; }
   } else if(S.view==='requests'){ h+=renderInbox(); }
+  else if(S.view==='guide'){ v.innerHTML=h+'<div class="bar"><h2>How it works</h2></div><div id="guidebox"></div>'; if(window.renderRentaGuide) renderRentaGuide($('#guidebox'),S.profile||S.mineList.length?'seller':'buyer'); return; }
   else { h+=renderMine(); }
   v.innerHTML=h; loadPhotos(v);
 }
@@ -331,7 +333,7 @@ function renderMine(){
   const me=S.profile;
   if(me) h+=`<div class="item"><div class="grow"><div class="small muted">Shown to customers as</div><h3>${esc(me.providerName||'')}</h3><div class="small num">${esc(me.phone||'')}</div></div><button class="btn sm" data-profile>Edit</button></div>`;
   const items=S.mineList;
-  if(!items.length) return h+`<div class="empty">${ICON.mine}<div>You have no listings yet.</div><div class="small">Offer a service, rent out a car, motorbike or room, or sell a product. It takes a minute.</div></div>`;
+  if(!items.length) return h+`<div class="empty">${ICON.mine}<div>You have no listings yet.</div><div class="small">Offer a service, rent out a car, motorbike or room, or sell a product. It takes a minute.</div><a class="btn sm" href="#guide">See how it works</a></div>`;
   return h+'<div class="list">'+items.map((it,i)=>{
     const n=S.recv.filter(r=>r.itemId===it.id&&r.status==='pending').length;
     return `<div class="item" style="--i:${Math.min(i,12)}">${thumbHTML(it,'mini')}<div class="grow">

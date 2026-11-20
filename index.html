@@ -119,6 +119,7 @@ section{padding:56px 0}
 .aboutcard p strong{color:var(--ink)}
 .aboutcard .cta{justify-content:flex-end}
 @media (max-width:820px){.aboutcard{grid-template-columns:1fr;padding:24px}.aboutcard .cta{justify-content:flex-start}}
+.gtitle{font-size:24px;margin:34px 0 14px}
 .final{text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px}
 .final h2{font-size:clamp(28px,3.6vw,44px)}
 .final p{color:var(--muted);margin:0 0 8px}
@@ -245,8 +246,8 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
 <section id="how">
   <div class="container">
     <div class="sec-head">
-      <h2>Booked in three steps.</h2>
-      <p>No middleman fees. You deal with the provider directly.</p>
+      <h2>How it works</h2>
+      <p>Booked in three steps. No middleman fees: you deal with the provider directly.</p>
     </div>
     <div class="steps">
       <div class="step"><div class="n">1</div><h3>Search near you</h3><p>Type what you need and choose your area.</p>
@@ -256,6 +257,8 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
       <div class="step"><div class="n">3</div><h3>Get confirmed</h3><p>The provider accepts and calls or texts you to finalize.</p>
         <div class="demo"><span style="flex:1">Mang Ruel, Plumbing</span><span class="chip ok">Accepted</span></div></div>
     </div>
+    <h3 class="gtitle">Step-by-step guide</h3>
+    <div id="howguide"></div>
   </div>
 </section>
 
@@ -326,6 +329,8 @@ RentaScene(document.getElementById('scene'),{mode:'hero'});
 </script>
 <script src="config.js"></script>
 <script src="places.js"></script>
+<script src="guide.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderRentaGuide(document.getElementById("howguide"),location.hash==="#how-list"?"seller":"buyer");});</script>
 <script type="module" src="landing-explore.js"></script>
 </body>
 </html>
