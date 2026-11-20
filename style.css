@@ -246,3 +246,7 @@ textarea{min-height:90px;resize:vertical}
 .check input{margin-top:3px;width:18px;height:18px;flex:none}
 .pin-icon span{display:block;width:30px;height:30px;border-radius:50% 50% 50% 0;background:#b9452c;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.35)}
 .pin-icon span::after{content:"";position:absolute;width:10px;height:10px;border-radius:50%;background:#fff;left:7px;top:7px}
+
+.invstatus{width:auto!important;padding:6px 10px!important;font-size:13px;font-weight:700;border-radius:10px!important}
+a.item:hover{box-shadow:var(--shadow)}
+.seg{flex-wrap:wrap}

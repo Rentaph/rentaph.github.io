@@ -233,7 +233,7 @@ function route(){
   let h=location.hash.slice(1);
   if(h.startsWith('l-')){ pendingOpen=h.slice(2); history.replaceState(null,'','#explore'); h='explore'; }
   if(h.startsWith('explore-')){ const c=h.slice(8); if(CATS[c]){ S.cat=c; document.querySelectorAll('#cats button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.cat===c)); } history.replaceState(null,'','#explore'); h='explore'; }
-  S.view=['explore','saved','requests','mine','guide'].includes(h)?h:'explore';
+  S.view=['explore','saved','requests','mine','guide','invites'].includes(h)?h:'explore';
   const v=$('#view'); v.classList.add('anim'); clearTimeout(route.t); route.t=setTimeout(()=>v.classList.remove('anim'),1200);
   render(); $('main').scrollTop=0;
 }
@@ -304,6 +304,7 @@ function render(){
     else { const list=S.listings.filter(it=>S.saved.has(it.id));
       h+= list.length?`<div class="grid">${list.map(cardHTML).join('')}</div>`:`<div class="empty">${ICON.saved}<div>Nothing saved yet.</div><div class="small">Tap Save on a listing to keep it here.</div></div>`; }
   } else if(S.view==='requests'){ h+=renderInbox(); }
+  else if(S.view==='invites'){ v.innerHTML=h+renderInvites(); return; }
   else if(S.view==='guide'){ v.innerHTML=h+'<div class="bar"><h2>How it works</h2></div><div id="guidebox"></div>'; if(window.renderRentaGuide) renderRentaGuide($('#guidebox'),S.profile||S.mineList.length?'seller':'buyer'); return; }
   else { h+=renderMine(); }
   v.innerHTML=h; loadPhotos(v);
@@ -331,6 +332,7 @@ function renderMine(){
   let h=`<div class="bar"><h2>My listings</h2>${S.user?`<button class="btn primary" data-new>${ICON.plus}Post a listing</button>`:''}</div>`;
   if(!S.user) return h+signInNote('post your services, vehicles, apartments or products');
   const me=S.profile;
+  h+=`<a class="item" href="#invites" style="text-decoration:none;color:inherit"><div class="grow"><h3>Invite businesses</h3><div class="small muted">Track local businesses you invite to Renta.ph and send each invite in one tap.</div></div><span class="btn sm">Open</span></a>`;
   if(me) h+=`<div class="item"><div class="grow"><div class="small muted">Shown to customers as</div><h3>${esc(me.providerName||'')}</h3><div class="small num">${esc(me.phone||'')}</div></div><button class="btn sm" data-profile>Edit</button></div>`;
   const items=S.mineList;
   if(!items.length) return h+`<div class="empty">${ICON.mine}<div>You have no listings yet.</div><div class="small">Offer a service, rent out a car, motorbike or room, or sell a product. It takes a minute.</div><a class="btn sm" href="#guide">See how it works</a></div>`;
@@ -418,7 +420,7 @@ function openAccount(){
   const u=S.user;
   openSheet('Your account',`<div><h3>${esc(u.displayName||'Renta.ph user')}</h3><div class="small muted">${esc(u.email||'')}</div></div>
     ${S.isAdmin?'<div class="note">You’re an admin. You can remove any listing that breaks the rules.</div>':''}
-    <div class="row"><a class="btn" href="#mine" data-close>My listings</a><a class="btn" href="#requests" data-close>Inbox</a>${/Android/i.test(navigator.userAgent)&&!matchMedia('(display-mode: standalone)').matches&&!document.referrer.startsWith('android-app://')?'<a class="btn" href="https://github.com/Rentaph/rentaph.github.io/releases/latest/download/renta-ph.apk">Get the Android app</a>':''}${canNotify()&&Notification.permission!=='granted'?'<button class="btn" data-notif>Turn on alerts</button>':''}</div>
+    <div class="row"><a class="btn" href="#mine" data-close>My listings</a><a class="btn" href="#requests" data-close>Inbox</a><a class="btn" href="#invites" data-close>Invite businesses</a>${/Android/i.test(navigator.userAgent)&&!matchMedia('(display-mode: standalone)').matches&&!document.referrer.startsWith('android-app://')?'<a class="btn" href="https://github.com/Rentaph/rentaph.github.io/releases/latest/download/renta-ph.apk">Get the Android app</a>':''}${canNotify()&&Notification.permission!=='granted'?'<button class="btn" data-notif>Turn on alerts</button>':''}</div>
     <button class="btn danger" id="so">Sign out</button>
     <div class="small muted row" style="justify-content:space-between"><span><a href="about.html">About</a> · <a href="about.html#donate">Support us</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></span><button class="linkbtn small" data-delacct style="color:var(--bad)">Delete my account</button></div>`,sh=>{
     sh.querySelector('#so').onclick=async()=>{ await signOut(auth); closeSheet(); toast('Signed out.'); };
@@ -740,11 +742,97 @@ async function registerPush(){
   }catch(_){}
 }
 
+/* ---------- invite tracker (private to each user) ---------- */
+const INV_STATUS=[['todo','Not yet invited'],['invited','Invited'],['replied','Replied'],['listed','Listed'],['no','Not interested']];
+const INV_DEFAULT={subject:'Free listing for [Business] on Renta.ph',body:`Hi [Business],
+
+I'm [Me], the creator of Renta.ph, a free website and app where people in [Area] can find and book local services, rentals and stores.
+
+I'd love to feature [Business] there. Listing is free, there's no commission, and customers message or call you directly.
+
+You can post your listing in about 5 minutes here: https://rentaph.web.app/app.html#mine
+Or reply to this message and I can set it up for you.
+
+Not interested? Just reply and I won't message again.
+
+Thank you!
+[Me]
+Renta.ph`};
+const INV={items:null,tpl:null,filter:'all',unsub:null};
+function invRef(){ return doc(db,'users',S.user.uid,'private','invites'); }
+function watchInvites(){
+  if(INV.unsub||!S.user) return;
+  INV.unsub=onSnapshot(invRef(),d=>{ const x=d.exists()?d.data():{}; INV.items=Array.isArray(x.items)?x.items:[]; INV.tpl=x.tpl||null; if(S.view==='invites') render(); },()=>{ INV.items=INV.items||[]; if(S.view==='invites') render(); });
+}
+async function saveInvites(items,tpl){ INV.items=items; if(tpl!==undefined) INV.tpl=tpl; await setDoc(invRef(),{items:items.slice(0,1000),tpl:INV.tpl||null,updatedAt:Date.now()}); }
+function fillTpl(s,b){ const me=S.user.displayName||S.profile?.providerName||'the Renta.ph team';
+  return String(s).replace(/\[Business\]/g,b.name||'there').replace(/\[Area\]/g,b.area||'your area').replace(/\[Me\]/g,me); }
+function invMail(b){ const t=INV.tpl||INV_DEFAULT; return 'mailto:'+encodeURIComponent(b.email||'')+'?subject='+encodeURIComponent(fillTpl(t.subject,b))+'&body='+encodeURIComponent(fillTpl(t.body,b)); }
+function renderInvites(){
+  let h=`<div class="bar"><h2>Invite businesses</h2>${S.user?`<button class="btn primary" data-invadd>${ICON.plus}Add business</button>`:''}</div>`;
+  if(!S.user) return h+signInNote('track the businesses you invite');
+  watchInvites();
+  if(INV.items===null) return h+'<div class="note">Loading your list…</div>';
+  const items=INV.items; const count=k=>items.filter(x=>(x.status||'todo')===k).length;
+  h+=`<div class="small muted">Find businesses on Google Maps or Facebook, add them here, then send each invite in one tap. Only you can see this list.</div>
+    <div class="seg" role="group" aria-label="Show">${[['all','All ('+items.length+')'],...INV_STATUS.map(([k,l])=>[k,l+' ('+count(k)+')'])].map(([k,l])=>`<button type="button" data-invf="${k}" aria-pressed="${INV.filter===k}">${l}</button>`).join('')}</div>
+    <div class="row"><button class="btn sm" data-invtpl>Edit invite message</button></div>`;
+  if(!items.length) return h+`<div class="empty">${ICON.requests}<div>No businesses yet.</div><div class="small">Tap <strong>Add business</strong> and paste a name, area and their public email or page link.</div></div>`;
+  const list=items.map((b,i)=>({...b,i})).filter(b=>INV.filter==='all'||(b.status||'todo')===INV.filter).sort((x,y)=>(y.added||0)-(x.added||0));
+  if(!list.length) return h+`<div class="empty"><div>Nothing in this group.</div></div>`;
+  return h+'<div class="list">'+list.map(b=>`<div class="item"><div class="grow">
+      <div class="row" style="justify-content:space-between"><h3>${esc(b.name)}</h3>
+        <select class="invstatus" data-invst="${b.i}" aria-label="Status of ${esc(b.name)}">${INV_STATUS.map(([k,l])=>`<option value="${k}" ${(b.status||'todo')===k?'selected':''}>${l}</option>`).join('')}</select></div>
+      <div class="small muted">${esc([b.cat,b.area].filter(Boolean).join(' · '))}${b.invitedAt?' · invited '+ago(b.invitedAt):''}</div>
+      ${b.email?`<div class="small">${esc(b.email)}</div>`:''}${b.note?`<div class="small muted">${esc(b.note)}</div>`:''}
+      <div class="row">
+        ${b.email?`<a class="btn sm primary" href="${esc(invMail(b))}" data-invsent="${b.i}">Send invite</a>`:''}
+        <button class="btn sm" data-invcopy="${b.i}">Copy message</button>
+        ${b.link?`<a class="btn sm" href="${esc(/^https?:\/\//.test(b.link)?b.link:'https://'+b.link)}" target="_blank" rel="noopener" data-invsent="${b.i}">Open page</a>`:''}
+        <button class="btn sm" data-invedit="${b.i}">Edit</button>
+      </div></div></div>`).join('')+'</div>';
+}
+function openInvEditor(i){
+  const b=i==null?{}:INV.items[i]; const cats=['Home services','Car & motor rental','Rooms & apartments','Local store / products','Other'];
+  openSheet(i==null?'Add a business':'Edit business',`<form id="ivf">
+    <label>Business name<input type="text" id="iv-n" name="name" required maxlength="80" value="${esc(b.name||'')}" placeholder="e.g. Bisaya Cool Aircon Care"></label>
+    <div class="two"><label>Category<select id="iv-c" name="cat">${cats.map(c=>`<option ${b.cat===c?'selected':''}>${c}</option>`).join('')}</select></label>
+    <label>Area<input type="text" id="iv-a" name="area" maxlength="60" value="${esc(b.area||'')}" placeholder="e.g. Mandaue City"></label></div>
+    <label>Business email<span class="hint">Their public business email, for the Send invite button.</span><input type="email" id="iv-e" name="email" maxlength="120" value="${esc(b.email||'')}" placeholder="name@example.com"></label>
+    <label>Facebook page or website<span class="hint">For businesses you’ll message on Messenger.</span><input type="text" id="iv-l" name="link" maxlength="300" value="${esc(b.link||'')}" placeholder="facebook.com/yourbusiness"></label>
+    <label>Notes<input type="text" id="iv-o" name="note" maxlength="200" value="${esc(b.note||'')}" placeholder="e.g. Found on Google Maps, open daily"></label>
+    <div class="row"><button class="btn primary" id="iv-save">${i==null?'Add business':'Save'}</button>${i==null?'':'<button type="button" class="btn danger" id="iv-del">Remove</button>'}</div></form>`,sh=>{
+    sh.querySelector('#ivf').onsubmit=async e=>{ e.preventDefault(); const f=new FormData(e.target); const btn=sh.querySelector('#iv-save'); btn.disabled=true;
+      const rec={...b,name:String(f.get('name')).trim(),cat:f.get('cat'),area:String(f.get('area')||'').trim(),email:String(f.get('email')||'').trim(),link:String(f.get('link')||'').trim(),note:String(f.get('note')||'').trim(),status:b.status||'todo',added:b.added||Date.now()};
+      const items=INV.items.slice(); if(i==null) items.push(rec); else items[i]=rec;
+      try{ await saveInvites(items); closeSheet(); toast(i==null?'Business added.':'Saved.'); render(); }catch(x){ btn.disabled=false; toast(errText(x)); } };
+    sh.querySelector('#iv-del')?.addEventListener('click',async()=>{ const items=INV.items.slice(); items.splice(i,1); try{ await saveInvites(items); closeSheet(); toast('Removed.'); render(); }catch(x){ toast(errText(x)); } });
+  });
+}
+function openInvTemplate(){
+  const t=INV.tpl||INV_DEFAULT;
+  openSheet('Invite message',`<div class="small muted">Use [Business], [Area] and [Me]. They’re filled in for each business when you tap Send invite or Copy message.</div>
+    <form id="itf"><label>Subject<input type="text" id="it-s" name="subject" maxlength="140" value="${esc(t.subject)}"></label>
+    <label>Message<textarea id="it-b" name="body" maxlength="3000" style="min-height:300px">${esc(t.body)}</textarea></label>
+    <div class="row"><button class="btn primary">Save message</button><button type="button" class="btn" id="it-reset">Use the default</button></div></form>`,sh=>{
+    sh.querySelector('#it-reset').onclick=()=>{ sh.querySelector('#it-s').value=INV_DEFAULT.subject; sh.querySelector('#it-b').value=INV_DEFAULT.body; };
+    sh.querySelector('#itf').onsubmit=async e=>{ e.preventDefault(); const f=new FormData(e.target);
+      try{ await saveInvites(INV.items,{subject:String(f.get('subject')),body:String(f.get('body'))}); closeSheet(); toast('Invite message saved.'); }catch(x){ toast(errText(x)); } };
+  });
+}
+async function markInvited(i){ const b=INV.items&&INV.items[i]; if(!b||(b.status&&b.status!=='todo')) return; const items=INV.items.slice(); items[i]={...b,status:'invited',invitedAt:Date.now()}; try{ await saveInvites(items); }catch(_){} }
+
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
   const t=e.target.closest('button,[data-open]'); if(!t) return;
   const D=t.dataset;
   if(D.open) openItem(D.open);
+  else if(D.invadd!==undefined) openInvEditor(null);
+  else if(D.invedit!==undefined) openInvEditor(Number(D.invedit));
+  else if(D.invtpl!==undefined) openInvTemplate();
+  else if(D.invf){ INV.filter=D.invf; render(); }
+  else if(D.invcopy!==undefined){ const b=INV.items[Number(D.invcopy)]; const t=INV.tpl||INV_DEFAULT;
+    try{ await navigator.clipboard.writeText(fillTpl(t.body,b)); toast('Message copied. Paste it in Messenger or a text.'); markInvited(Number(D.invcopy)); }catch(_){ toast('Couldn’t copy. Long-press the message in Edit invite message instead.'); } }
   else if(D.thread){ needUser(()=>openThread(D.thread)); }
   else if(D.rate){ openReview(D.rate); }
   else if(D.delacct!==undefined){ confirmDeleteAccount(); }
@@ -768,6 +856,9 @@ document.addEventListener('click',async e=>{
   else if(D.st){ t.disabled=true; try{ await setStatus(D.id,D.st); toast(D.st==='accepted'?'Accepted. The customer was notified.':'Request updated.'); }catch(x){ t.disabled=false; toast(errText(x)); } }
 });
 
+document.addEventListener('click',e=>{ const a=e.target.closest('a[data-invsent]'); if(a) markInvited(Number(a.dataset.invsent)); });
+document.addEventListener('change',async e=>{ const s=e.target.closest('[data-invst]'); if(!s) return; const i=Number(s.dataset.invst); const items=INV.items.slice(); items[i]={...items[i],status:s.value,...(s.value==='invited'&&!items[i].invitedAt?{invitedAt:Date.now()}:{})}; try{ await saveInvites(items); toast('Status updated.'); render(); }catch(x){ toast(errText(x)); } });
+
 /* ---------- data ---------- */
 const byNew=a=>a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0));
 function refreshOpenThread(){
@@ -775,7 +866,7 @@ function refreshOpenThread(){
   const info=$('#tinfo'); if(info) info.innerHTML=threadInfoHTML(t);
 }
 function watchUser(u){
-  unsubs.forEach(f=>f()); unsubs=[]; S.recv=[]; S.sent=[]; S.mineList=[]; S.saved=new Set(); S.profile=null; S.isAdmin=false; known.recv=null; known.sent=null;
+  unsubs.forEach(f=>f()); unsubs=[]; INV.unsub&&INV.unsub(); INV.unsub=null; INV.items=null; INV.tpl=null; S.recv=[]; S.sent=[]; S.mineList=[]; S.saved=new Set(); S.profile=null; S.isAdmin=false; known.recv=null; known.sent=null;
   if(!u){ render(); return; }
   const quiet=()=>{};
   unsubs.push(onSnapshot(doc(db,'providers',u.uid),d=>{ S.profile=d.exists()?d.data():null; if(S.view==='mine') render(); },quiet));
@@ -791,7 +882,7 @@ function start(){
   if(!cfg||!cfg.apiKey||cfg.apiKey.startsWith('PASTE')){ S.error='Renta.ph isn’t connected to its database yet. The owner needs to add the Firebase settings in config.js.'; S.ready=true; render(); return; }
   const app=initializeApp(cfg); fbApp=app; auth=getAuth(app); db=getFirestore(app);
   getRedirectResult(auth).then(r=>{ if(r) toast('You’re signed in.'); }).catch(e=>toast(authErr(e)));
-  onAuthStateChanged(auth,u=>{ S.user=u; renderAcct(); watchUser(u); if(u) registerPush(); });
+  onAuthStateChanged(auth,u=>{ S.user=u; renderAcct(); watchUser(u); render(); if(u) registerPush(); });
   onSnapshot(query(collection(db,'reviews'),orderBy('at','desc'),limit(1000)),s=>{
     S.reviews=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.providerId&&x.stars>=1&&x.stars<=5);
     if(S.view==='explore'||S.view==='saved') render(); refreshOpenThread();
