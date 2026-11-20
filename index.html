@@ -113,6 +113,12 @@ section{padding:56px 0}
 .earn{margin-top:auto;background:var(--accent);color:#231600;border-radius:14px;padding:12px;font-weight:700;font-size:14px}
 .earn strong{display:block;font:800 24px var(--display);font-variant-numeric:tabular-nums}
 
+.aboutcard{background:var(--surface);border:1px solid var(--line);border-radius:28px;padding:32px;display:grid;grid-template-columns:1.4fr 1fr;gap:24px;align-items:center}
+.aboutcard h2{font-size:clamp(26px,3vw,36px);line-height:1.1}
+.aboutcard p{color:var(--muted);margin:10px 0 0}
+.aboutcard p strong{color:var(--ink)}
+.aboutcard .cta{justify-content:flex-end}
+@media (max-width:820px){.aboutcard{grid-template-columns:1fr;padding:24px}.aboutcard .cta{justify-content:flex-start}}
 .final{text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px}
 .final h2{font-size:clamp(28px,3.6vw,44px)}
 .final p{color:var(--muted);margin:0 0 8px}
@@ -170,6 +176,7 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
       <a class="hide-sm" href="#explore">Explore</a>
       <a class="hide-sm" href="#how">How it works</a>
       <a class="hide-sm" href="#providers">For providers</a>
+      <a class="hide-sm" href="about.html">About</a>
       <a class="btn ghost sm hide-sm" href="https://github.com/Rentaph/rentaph.github.io/releases/latest/download/renta-ph.apk">Android app</a>
       <a class="btn primary sm" href="app.html#explore">Open the app</a>
     </div>
@@ -288,7 +295,19 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
   </div>
 </section>
 
-<footer><div class="container"><a class="logo" href="./" style="font-size:22px">renta<i></i><span>ph</span></a><span>Made in Cebu for the Philippines · © 2026 Renta.ph · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></span></div></footer>
+<section id="about">
+  <div class="container">
+    <div class="aboutcard">
+      <div>
+        <h2>Made to support local businesses.</h2>
+        <p>Renta.ph gives plumbers, cleaners, landlords, car and motor owners and small sellers a free place to be found, with no commission. Created by <strong>Jessie Cajandab</strong>.</p>
+      </div>
+      <div class="cta"><a class="btn ghost" href="about.html">About Renta.ph</a><a class="btn gold" href="about.html#donate">Support the app</a></div>
+    </div>
+  </div>
+</section>
+
+<footer><div class="container"><a class="logo" href="./" style="font-size:22px">renta<i></i><span>ph</span></a><span>Made in Cebu for the Philippines · © 2026 Renta.ph · <a href="about.html">About</a> · <a href="about.html#donate">Support us</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></span></div></footer>
 
 <script>
 RentaScene(document.getElementById('scene'),{mode:'hero'});

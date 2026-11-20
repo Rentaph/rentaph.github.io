@@ -418,7 +418,7 @@ function openAccount(){
     ${S.isAdmin?'<div class="note">You’re an admin. You can remove any listing that breaks the rules.</div>':''}
     <div class="row"><a class="btn" href="#mine" data-close>My listings</a><a class="btn" href="#requests" data-close>Inbox</a>${/Android/i.test(navigator.userAgent)&&!matchMedia('(display-mode: standalone)').matches&&!document.referrer.startsWith('android-app://')?'<a class="btn" href="https://github.com/Rentaph/rentaph.github.io/releases/latest/download/renta-ph.apk">Get the Android app</a>':''}${canNotify()&&Notification.permission!=='granted'?'<button class="btn" data-notif>Turn on alerts</button>':''}</div>
     <button class="btn danger" id="so">Sign out</button>
-    <div class="small muted row" style="justify-content:space-between"><span><a href="privacy.html">Privacy policy</a> · <a href="terms.html">Terms</a></span><button class="linkbtn small" data-delacct style="color:var(--bad)">Delete my account</button></div>`,sh=>{
+    <div class="small muted row" style="justify-content:space-between"><span><a href="about.html">About</a> · <a href="about.html#donate">Support us</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></span><button class="linkbtn small" data-delacct style="color:var(--bad)">Delete my account</button></div>`,sh=>{
     sh.querySelector('#so').onclick=async()=>{ await signOut(auth); closeSheet(); toast('Signed out.'); };
   });
 }

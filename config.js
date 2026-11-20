@@ -14,3 +14,6 @@ self.RENTA_FIREBASE = {
 self.RENTA_SUPPORT_EMAIL = "telltheworldlyf@gmail.com";
 // Public "Web Push certificate" key from Firebase > Project settings > Cloud Messaging.
 self.RENTA_VAPID = "";
+
+// Donation details shown on about.html. Leave blank to hide a method.
+self.RENTA_DONATE = { name: "Jessie Cajandab", gcash: "", maya: "", link: "", qr: "" };
