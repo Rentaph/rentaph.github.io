@@ -2,7 +2,7 @@
 
 Renta.ph is a free marketplace for Cebu. Customers find services, rent cars and apartments, and order products. Providers post listings and answer requests.
 
-- **Website:** https://ajcajandab-png.github.io/renta-ph/
+- **Website:** https://rentaph.github.io/
 - **Hosting:** GitHub Pages, from the `main` branch root
 - **Sign-in and data:** Firebase Authentication (Google or email) and Cloud Firestore
 

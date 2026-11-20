@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="appName">Renta.ph</string>
-    <string name="launchUrl">https://ajcajandab-png.github.io/renta-ph/app.html</string>
+    <string name="launchUrl">https://rentaph.github.io/app.html</string>
     <string name="providerAuthority">ph.renta.app.fileprovider</string>
     <string name="assetStatements" translatable="false">
         [{ \"relation\": [\"delegate_permission/common.handle_all_urls\"],
-           \"target\": {\"namespace\": \"web\", \"site\": \"https://ajcajandab-png.github.io\"}}]
+           \"target\": {\"namespace\": \"web\", \"site\": \"https://rentaph.github.io\"}}]
     </string>
 </resources>
