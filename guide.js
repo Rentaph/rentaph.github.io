@@ -7,10 +7,12 @@
   .gseg button[aria-pressed="true"]{background:#0e5a5f;color:#fff}
   .gintro{margin:0;color:#56606e;font-size:16px;line-height:1.5}
   .gsteps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;counter-reset:g}
-  .gsteps li{background:#fff;border:1px solid #dfe2da;border-radius:18px;padding:16px 16px 16px 64px;position:relative;font-size:15.5px;line-height:1.5;color:#152030;counter-increment:g}
-  .gsteps li::before{content:counter(g);position:absolute;left:16px;top:16px;width:34px;height:34px;border-radius:11px;background:#152030;color:#fff;display:grid;place-items:center;font:800 17px "Bricolage Grotesque",system-ui,sans-serif}
-  .gsteps li b{display:block;font-size:16.5px;margin-bottom:2px}
-  .gsteps li ul{margin:6px 0 0;padding-left:18px;color:#56606e}
+  .gsteps>li{background:#fff;border:1px solid #dfe2da;border-radius:18px;padding:16px 16px 16px 64px;position:relative;font-size:15.5px;line-height:1.5;color:#152030;counter-increment:g}
+  .gsteps>li::before{content:counter(g);position:absolute;left:16px;top:16px;width:34px;height:34px;border-radius:11px;background:#152030;color:#fff;display:grid;place-items:center;font:800 17px "Bricolage Grotesque",system-ui,sans-serif}
+  .gsteps>li b{display:block;font-size:16.5px;margin-bottom:2px}
+  .gsteps>li ul{margin:6px 0 0;padding-left:18px;color:#56606e;list-style:disc}
+  .gsteps>li ul li{background:none;border:0;padding:0;margin:2px 0;counter-increment:none;font-size:15px}
+  .gsteps>li ul li::before{content:none}
   .gsteps li .k{display:inline-block;background:#dcefeb;color:#0e5a5f;font-weight:700;border-radius:7px;padding:0 7px}
   .gtips{background:#f6efd9;border:1px solid #ecdcae;border-radius:18px;padding:16px 18px;font-size:15px;line-height:1.55;color:#152030}
   .gtips b{display:block;margin-bottom:4px}
@@ -20,7 +22,7 @@
   const buyer = `
   <p class="gintro">Find a service, rent a vehicle or a place, or order from a local seller.</p>
   <ol class="gsteps">
-    <li><b>Open Renta.ph</b>Go to rentaph.github.io and tap ${k('Open the app')}, or open the Android app.</li>
+    <li><b>Open Renta.ph</b>Go to rentaph.web.app and tap ${k('Open the app')}, or open the Android app.</li>
     <li><b>Search what you need</b>Type something like “plumber”, “aircon” or “room”. Choose a category and your Province, City and Barangay.</li>
     <li><b>Check the listing</b>Tap a listing to see the photos, price, location, map and ratings.</li>
     <li><b>Tap the request button</b>${k('Book this service')}, ${k('Request to rent')}, ${k('Request a viewing')} or ${k('Order / reserve')}.</li>
@@ -32,7 +34,7 @@
   const seller = `
   <p class="gintro">List your service, room, vehicle or products for free and get requests on your phone. No commission.</p>
   <ol class="gsteps">
-    <li><b>Open Renta.ph</b>Go to rentaph.github.io and tap ${k('Open the app')}, or open the Android app.</li>
+    <li><b>Open Renta.ph</b>Go to rentaph.web.app and tap ${k('Open the app')}, or open the Android app.</li>
     <li><b>Sign in</b>Tap ${k('Sign in')} at the top right. Use your Google account, or “Create an account” with your email.</li>
     <li><b>Start a listing</b>Tap ${k('My listings')} at the bottom, then ${k('Post a listing')}.</li>
     <li><b>Set up your profile</b>Type your business or display name and your mobile number, then tap ${k('Save profile')}.</li>
