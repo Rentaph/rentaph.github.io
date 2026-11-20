@@ -6,6 +6,7 @@
 <title>Renta.ph: services, rentals and products near you</title>
 <meta name="description" content="Find services, rent a car or apartment, and buy from local providers in Cebu. Post your own listing for free.">
 <meta name="theme-color" content="#0e5a5f">
+<meta name="color-scheme" content="light">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -16,6 +17,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="scene.css">
+<script src="scene.js"></script>
 </head>
 <body>
 <header>
@@ -31,7 +34,14 @@
   <div class="cats" id="cats" role="group" aria-label="Category"></div>
 </header>
 
-<main><div class="wrap" id="view"><div class="note">Loading Renta.ph…</div></div></main>
+<main>
+  <section class="welcome" id="welcome">
+    <span class="kicker"><b></b>Now open in Cebu</span>
+    <h1><span id="hi">Hi!</span> What do you <em>need</em> today?</h1>
+    <div class="scene-wrap" id="appscene" role="img" aria-label="Animated Cebu street with local stores, rentals and service providers"></div>
+  </section>
+  <div class="wrap" id="view"><div class="note">Loading Renta.ph…</div></div>
+</main>
 
 <nav class="tabs" aria-label="Sections">
   <a href="#explore" data-v="explore"></a>

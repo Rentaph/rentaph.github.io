@@ -43,6 +43,8 @@ service cloud.firestore {
 
     // Requests: only the customer and the provider can see them
     match /inquiries/{id} {
+      function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+      function lastFromOk() { return !changed().hasAny(['lastFrom']) || request.resource.data.lastFrom == me(); }
       allow read: if signedIn() && (resource.data.ownerId == me() || resource.data.fromId == me());
       allow create: if signedIn()
         && request.resource.data.fromId == me()
@@ -50,17 +52,32 @@ service cloud.firestore {
         && request.resource.data.status == 'pending'
         && str(request.resource.data.message, 800)
         && str(request.resource.data.contact, 20) && request.resource.data.contact.size() > 0;
-      allow update: if signedIn() && (
+      allow update: if signedIn() && lastFromOk() && (
         (resource.data.ownerId == me()
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reply', 'updatedAt'])
-          && request.resource.data.status in ['pending', 'accepted', 'declined', 'done']
-          && str(request.resource.data.reply, 300))
+          && changed().hasOnly(['status', 'reply', 'updatedAt', 'lastMsg', 'lastAt', 'lastFrom', 'ownerSeen'])
+          && (request.resource.data.status == resource.data.status
+              || request.resource.data.status in ['accepted', 'declined', 'done']))
         ||
         (resource.data.fromId == me()
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
-          && request.resource.data.status == 'cancelled')
+          && changed().hasOnly(['status', 'updatedAt', 'lastMsg', 'lastAt', 'lastFrom', 'fromSeen'])
+          && (request.resource.data.status == resource.data.status
+              || request.resource.data.status == 'cancelled'))
       );
       allow delete: if false;
+
+      // Chat messages inside a request
+      match /messages/{mid} {
+        function party() {
+          let r = get(/databases/$(database)/documents/inquiries/$(id)).data;
+          return r.ownerId == me() || r.fromId == me();
+        }
+        allow read: if signedIn() && party();
+        allow create: if signedIn() && party()
+          && request.resource.data.from == me()
+          && str(request.resource.data.text, 1000) && request.resource.data.text.size() > 0
+          && request.resource.data.at is number;
+        allow update, delete: if false;
+      }
     }
 
     // Each person's private data (saved listings)

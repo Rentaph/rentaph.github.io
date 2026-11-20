@@ -1,0 +1,56 @@
+/* Animated Renta.ph street scene, shared by the landing page and the app */
+.scene-wrap{position:relative;overflow:hidden;background:linear-gradient(180deg,#dcefeb 0%,#f6f1df 78%)}
+.scene-wrap svg{display:block;width:100%;height:auto}
+/* scene animations */
+.cloud{animation:drift 38s linear infinite}
+.cloud.c2{animation-duration:52s;animation-delay:-20s}
+.cloud.c3{animation-duration:46s;animation-delay:-34s}
+.sun{transform-box:fill-box;transform-origin:center;animation:pulse 5s ease-in-out infinite}
+.win{animation:lights 7s steps(1) infinite}
+.sign{transform-box:fill-box;transform-origin:50% 0;animation:swing 3.2s ease-in-out infinite}
+.car{animation:drive 11s linear infinite}
+.scooter{animation:drive-back 14s linear infinite;animation-delay:-5s}
+.c-rent{animation-delay:-5.5s}
+.moto{animation:drive 8s linear infinite;animation-delay:-2s}
+.moto.m2{animation-duration:9.5s;animation-delay:-7s}
+.rock{animation:rock 2.4s ease-in-out infinite}
+.keys{transform-box:fill-box;transform-origin:0 100%;animation:keys 1.6s ease-in-out infinite}
+.lamp{animation:blink 1.4s step-end infinite}
+.wheel{transform-box:fill-box;transform-origin:center;animation:spin .6s linear infinite}
+.lane{animation:lane 1.2s linear infinite}
+.walker{animation:walk 26s linear infinite}
+.walker.w2{animation-duration:34s;animation-delay:-14s}
+.bob{animation:bob .7s ease-in-out infinite}
+.legA{transform-box:fill-box;transform-origin:50% 0;animation:leg .7s ease-in-out infinite}
+.legB{transform-box:fill-box;transform-origin:50% 0;animation:leg .7s ease-in-out infinite reverse}
+.mop{transform-box:fill-box;transform-origin:50% 0;animation:mop 1.4s ease-in-out infinite}
+.wrench{transform-box:fill-box;transform-origin:0% 50%;animation:wrench .8s ease-in-out infinite}
+.drop{animation:drop 1.6s ease-in infinite}
+.drop.d2{animation-delay:.5s}.drop.d3{animation-delay:1s}
+.bubble{transform-box:fill-box;transform-origin:50% 100%;animation:pop 9s ease-in-out infinite}
+.wave{transform-box:fill-box;transform-origin:20% 100%;animation:wave 1.2s ease-in-out infinite}
+.link{stroke-dasharray:6 8;animation:dash 1.4s linear infinite}
+.ring{transform-box:fill-box;transform-origin:center;animation:ring 2.4s ease-out infinite}
+.smoke{animation:smoke 3s ease-out infinite}
+
+@keyframes drift{from{transform:translateX(-260px)}to{transform:translateX(1320px)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes lights{0%,100%{fill:#f6d77a}45%{fill:#c9d6e3}}
+@keyframes swing{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+@keyframes drive{from{transform:translateX(-220px)}to{transform:translateX(1320px)}}
+@keyframes drive-back{from{transform:translateX(1320px)}to{transform:translateX(-200px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes lane{to{transform:translateX(-60px)}}
+@keyframes walk{from{transform:translateX(-80px)}to{transform:translateX(1300px)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes leg{0%,100%{transform:rotate(18deg)}50%{transform:rotate(-18deg)}}
+@keyframes mop{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(14deg)}}
+@keyframes wrench{0%,100%{transform:rotate(-20deg)}50%{transform:rotate(25deg)}}
+@keyframes drop{0%{transform:translateY(0);opacity:1}100%{transform:translateY(22px);opacity:0}}
+@keyframes pop{0%,4%{transform:scale(.6);opacity:0}9%,62%{transform:scale(1);opacity:1}70%,100%{transform:scale(.6);opacity:0}}
+@keyframes wave{0%,100%{transform:rotate(0)}50%{transform:rotate(-30deg)}}
+@keyframes dash{to{stroke-dashoffset:-28}}
+@keyframes ring{0%{transform:scale(.5);opacity:.8}100%{transform:scale(2.4);opacity:0}}
+@keyframes smoke{0%{transform:translate(0,0);opacity:.6}100%{transform:translate(-14px,-30px);opacity:0}}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.scene-wrap *{animation:none!important}}

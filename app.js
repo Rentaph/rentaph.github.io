@@ -20,39 +20,49 @@ const ICON = {
   close:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2"/></svg>',
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  camera:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg>',
+  send:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12 20 4l-6 16-3-7z"/></svg>',
+  bell:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg>',
   google:'<svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.6 12.3c0-.8-.1-1.5-.2-2.3H12v4.3h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.7c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.8 14.2a6.6 6.6 0 0 1 0-4.3V7.1H2.1a11 11 0 0 0 0 9.9z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3 .6 4.2 1.6l3.1-3.1A11 11 0 0 0 2.1 7.1l3.7 2.8C6.7 7.3 9.1 5.4 12 5.4z"/></svg>'
 };
 const CATS = {
   services:{label:'Services', one:'Service', subs:['Aircon & appliance','Cleaning','Plumbing & electrical','Beauty & wellness','Tutoring','Moving & delivery','Events & catering','Tech & gadget repair','Other service'], unit:'job', act:'Book this service'},
-  cars:{label:'Car rental', one:'Car rental', subs:['Self-drive','With driver','Van / group','Motorcycle'], unit:'day', act:'Request to rent'},
+  cars:{label:'Car & motor rental', one:'Vehicle rental', subs:['Self-drive car','Car with driver','Van / group','Motorcycle'], unit:'day', act:'Request to rent'},
   apartments:{label:'Apartments', one:'Apartment', subs:['Room / bedspace','Studio','1–2 bedroom','House','Short stay'], unit:'month', act:'Request a viewing'},
   products:{label:'Products', one:'Product', subs:['Food & home-made','Gadgets','Home & furniture','Fashion','Other product'], unit:'item', act:'Order / reserve'}
 };
-const UNITS = {hour:'hour',job:'job',day:'day',night:'night',month:'month',item:'item'};
+const UNITS = {hour:'hour',job:'job',visit:'visit',day:'day',night:'night',month:'month',item:'item'};
 const CITIES = ['Cebu City','Mandaue','Lapu-Lapu','Talisay','Consolacion','Liloan','Minglanilla','Danao','Carcar','Toledo'];
 const STATUS = {pending:'Waiting for reply',accepted:'Accepted',declined:'Declined',cancelled:'Cancelled',done:'Completed'};
+const STATUS_MSG = {accepted:'Accepted the request',declined:'Declined the request',done:'Marked the request as completed',cancelled:'Cancelled the request'};
+const MAX_PHOTOS = 6;
 const EXAMPLES = [
   {id:'ex1',cat:'services',sub:'Aircon & appliance',title:'Aircon cleaning, window or split type',price:800,unit:'job',city:'Mandaue',providerName:'Bisaya Cool Aircon Care',desc:'General cleaning with chemical wash for split type (+₱500). Includes freon check.'},
-  {id:'ex2',cat:'cars',sub:'Self-drive',title:'Toyota Vios 2022, automatic',price:1800,unit:'day',city:'Lapu-Lapu',providerName:'Mactan Wheels',desc:'Self-drive with valid license and 1 valid ID. ₱3,000 refundable deposit.'},
+  {id:'ex2',cat:'cars',sub:'Self-drive car',title:'Toyota Vios 2022, automatic',price:1800,unit:'day',city:'Lapu-Lapu',providerName:'Mactan Wheels',desc:'Self-drive with valid license and 1 valid ID. ₱3,000 refundable deposit.'},
+  {id:'ex5',cat:'cars',sub:'Motorcycle',title:'Honda Click 125, with helmet',price:500,unit:'day',city:'Lapu-Lapu',providerName:'Mactan Wheels',desc:'Includes 2 helmets. Valid license required. ₱1,000 refundable deposit.'},
   {id:'ex3',cat:'apartments',sub:'Studio',title:'Furnished studio near IT Park',price:14000,unit:'month',city:'Cebu City',providerName:'Banilad Residences',desc:'22 sqm, aircon, own CR, Wi-Fi ready. 1 month advance, 1 month deposit.'},
+  {id:'ex6',cat:'services',sub:'Cleaning',title:'House deep cleaning, 2 cleaners',price:1200,unit:'visit',city:'Cebu City',providerName:'Linis Ate Cleaning',desc:'4 hours, bring our own supplies. Kitchen, CR, floors and windows.'},
   {id:'ex4',cat:'products',sub:'Food & home-made',title:'Danggit and dried mango pasalubong set',price:450,unit:'item',city:'Talisay',providerName:'Lola Nena’s Kitchen',desc:'500 g danggit, 2 packs dried mangoes, 1 jar chicharon. Order 1 day ahead.'}
-].map(x=>({...x,ownerId:'example',example:true,active:true,createdAt:0}));
+].map((x,i)=>({...x,ownerId:'example',example:true,active:true,createdAt:-i}));
 
 /* ---------- state ---------- */
 const S = {user:null,isAdmin:false,ready:false,error:'',profile:null,
-  listings:[],mineList:[],recv:[],sent:[],saved:new Set(),cat:'all',q:'',city:'',view:'explore',reqTab:'recv',photos:new Map()};
-let auth=null, db=null, unsubs=[];
+  listings:[],mineList:[],recv:[],sent:[],saved:new Set(),cat:'all',q:'',city:'',view:'explore',photos:new Map(),openThread:null};
+let auth=null, db=null, unsubs=[], threadUnsub=null, threadMsgs=[];
 
 const $ = s=>document.querySelector(s);
 const esc = v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const peso = n=>'₱'+Number(n||0).toLocaleString('en-PH',{maximumFractionDigits:2});
 const fmtDate = d=>{ if(!d) return ''; const t=new Date(d+'T00:00:00'); return isNaN(t)?esc(d):t.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}); };
-const ago = ms=>{ const s=(Date.now()-ms)/1000; if(s<3600) return Math.max(1,Math.round(s/60))+' min ago'; if(s<86400) return Math.round(s/3600)+' h ago'; return Math.round(s/86400)+' d ago'; };
+const ago = ms=>{ if(!ms) return ''; const s=(Date.now()-ms)/1000; if(s<60) return 'just now'; if(s<3600) return Math.round(s/60)+' min ago'; if(s<86400) return Math.round(s/3600)+' h ago'; return Math.round(s/86400)+' d ago'; };
+const clock = ms=>new Date(ms).toLocaleString('en-PH',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 const telHref = p=>'tel:'+String(p||'').replace(/[^\d+]/g,'');
 const safeImg = u=>/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(u||'')?u:'';
 const catOf = c=>CATS[c]?c:'services';
+const slotKey = (id,n)=>n?`${id}_${n}`:id;
+const photoCount = it=>Math.min(MAX_PHOTOS,Number(it.photoCount ?? (it.hasPhoto?1:0))||0);
 
-function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove('show'),3400); }
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove('show'),3600); }
 function errText(e){
   const c=(e&&e.code)||'';
   if(c.includes('permission-denied')) return 'You don’t have permission to do that. Sign in again and retry.';
@@ -68,6 +78,59 @@ const authErr = e=>({
   'auth/network-request-failed':'No connection. Check your internet and try again.'
 }[e&&e.code]||'Sign-in didn’t work. Try again.');
 
+/* ---------- threads (requests + chat) ---------- */
+const roleOf = t=>S.user&&t.ownerId===S.user.uid?'owner':'customer';
+const seenOf = t=>roleOf(t)==='owner'?(t.ownerSeen||0):(t.fromSeen||0);
+const seenField = t=>roleOf(t)==='owner'?'ownerSeen':'fromSeen';
+const lastAtOf = t=>t.lastAt||t.updatedAt||t.createdAt||0;
+function isUnread(t){
+  if(!S.user) return false;
+  if(t.lastFrom) return t.lastFrom!==S.user.uid && lastAtOf(t)>seenOf(t);
+  return roleOf(t)==='owner' ? (t.status==='pending' && !t.ownerSeen) : (!!t.reply && !t.fromSeen);
+}
+function threads(){
+  const m=new Map(); [...S.recv,...S.sent].forEach(t=>m.set(t.id,t));
+  return [...m.values()].sort((a,b)=>lastAtOf(b)-lastAtOf(a));
+}
+const unreadCount = ()=>threads().filter(isUnread).length;
+
+/* ---------- notifications ---------- */
+let swReg=null;
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').then(r=>swReg=r).catch(()=>{}); }
+const canNotify = ()=>'Notification' in window;
+async function enableNotifs(){
+  if(!canNotify()) return toast('This browser can’t show notifications.');
+  const p=await Notification.requestPermission();
+  toast(p==='granted'?'Alerts are on. You’ll be notified about new requests and replies.':'Alerts are off. You can turn them on in your browser settings.');
+  render();
+}
+function notify(title,body,threadId){
+  if(S.openThread!==threadId) toast(`${title}: ${body}`);
+  if(canNotify()&&Notification.permission==='granted'&&document.hidden){
+    const opts={body,icon:'icon-192.png',badge:'icon-192.png',tag:threadId,data:{url:location.pathname+'#requests'}};
+    if(swReg) swReg.showNotification(title,opts).catch(()=>{}); else try{ new Notification(title,opts); }catch(_){}
+  }
+}
+const known={recv:null,sent:null};
+function watchChanges(kind,list){
+  const prev=known[kind]; const next={}; list.forEach(t=>next[t.id]=lastAtOf(t)); known[kind]=next;
+  if(!prev) return;
+  list.forEach(t=>{
+    const before=prev[t.id];
+    if(before===undefined){ if(kind==='recv') notify('New request',`${t.fromName||'A customer'} · ${t.itemTitle}`,t.id); return; }
+    if(lastAtOf(t)>before && t.lastFrom && t.lastFrom!==S.user.uid){
+      const who=kind==='recv'?(t.fromName||'Customer'):(t.providerName||'Provider');
+      notify(who,t.lastMsg||STATUS[t.status]||'New message',t.id);
+    }
+  });
+}
+function updateBadges(){
+  const n=unreadCount();
+  const ra=document.querySelector('nav.tabs a[data-v="requests"]'); ra.querySelector('.dot')?.remove();
+  if(n) ra.insertAdjacentHTML('beforeend',`<span class="dot num">${n}</span>`);
+  document.title=(n?`(${n}) `:'')+'Renta.ph';
+}
+
 /* ---------- shell ---------- */
 function buildShell(){
   const cats=$('#cats');
@@ -76,28 +139,35 @@ function buildShell(){
   $('#city').innerHTML='<option value="">All areas</option>'+CITIES.map(c=>`<option>${c}</option>`).join('');
   $('#city').onchange=e=>{S.city=e.target.value; if(S.view!=='explore') location.hash='explore'; else render();};
   $('#q').oninput=e=>{S.q=e.target.value.trim().toLowerCase(); clearTimeout(buildShell.t); buildShell.t=setTimeout(()=>{ if(S.view!=='explore') location.hash='explore'; else render(); },150);};
-  const labels={explore:'Explore',saved:'Saved',requests:'Requests',mine:'My listings'};
+  const labels={explore:'Explore',saved:'Saved',requests:'Inbox',mine:'My listings'};
   document.querySelectorAll('nav.tabs a').forEach(a=>{a.innerHTML=ICON[a.dataset.v]+labels[a.dataset.v];});
   $('#acct').onclick=()=>S.user?openAccount():openSignIn();
+  if(window.RentaScene) RentaScene($('#appscene'),{mode:'banner'});
 }
-function route(){ const h=location.hash.slice(1); S.view=['explore','saved','requests','mine'].includes(h)?h:'explore'; render(); $('main').scrollTop=0; }
+function route(){
+  const h=location.hash.slice(1); S.view=['explore','saved','requests','mine'].includes(h)?h:'explore';
+  const v=$('#view'); v.classList.add('anim'); clearTimeout(route.t); route.t=setTimeout(()=>v.classList.remove('anim'),1200);
+  render(); $('main').scrollTop=0;
+}
 window.addEventListener('hashchange',route);
 function renderAcct(){
   const b=$('#acct');
   if(S.user){ const n=(S.user.displayName||S.user.email||'?').trim(); b.textContent=n[0].toUpperCase(); b.classList.add('in'); b.setAttribute('aria-label','Your account'); }
   else { b.textContent='Sign in'; b.classList.remove('in'); b.removeAttribute('aria-label'); }
+  const first=(S.user?.displayName||'').trim().split(/\s+/)[0];
+  $('#hi').textContent=first?`Hi ${first}!`:'Hi!';
 }
 
 /* ---------- rendering ---------- */
-const keyOf = it=>it.id;
 function thumbHTML(it,cls){
-  const k=catOf(it.cat); const src=S.photos.get(it.id);
-  return `<div class="${cls} k-${k}" data-photo="${esc(it.id)}" data-has="${it.hasPhoto?1:0}">${ICON[k]}${src?`<img alt="" src="${src}">`:''}</div>`;
+  const k=catOf(it.cat); const src=S.photos.get(it.id); const has=photoCount(it)>0;
+  return `<div class="${cls} k-${k}" data-photo="${esc(it.id)}" data-has="${has?1:0}">${ICON[k]}${src?`<img alt="" src="${src}">`:''}</div>`;
 }
-function cardHTML(it){
-  const k=catOf(it.cat);
-  return `<button type="button" class="card" data-open="${esc(it.id)}">
+function cardHTML(it,i){
+  const k=catOf(it.cat); const n=photoCount(it);
+  return `<button type="button" class="card" style="--i:${Math.min(i,12)}" data-open="${esc(it.id)}">
     ${it.example?'<span class="badge">Example</span>':''}${it.active===false?'<span class="badge paused">Paused</span>':''}
+    ${n>1?`<span class="badge count">${ICON.camera}${n}</span>`:''}
     ${thumbHTML(it,'thumb')}
     <div class="cbody">
       <div class="ctag" style="color:var(--c-${k})">${esc(it.sub||CATS[k].one)}</div>
@@ -116,8 +186,8 @@ function filtered(){
 function signInNote(what){ return `<div class="note"><strong>Sign in to ${what}.</strong> It’s free. Use your Google account or an email. <button class="linkbtn" data-signin>Sign in</button></div>`; }
 function render(){
   document.querySelectorAll('nav.tabs a').forEach(a=>{a.removeAttribute('aria-current'); if(a.dataset.v===S.view) a.setAttribute('aria-current','page');});
-  const pend=S.recv.filter(r=>r.status==='pending').length;
-  const ra=document.querySelector('nav.tabs a[data-v="requests"]'); ra.querySelector('.dot')?.remove(); if(pend) ra.insertAdjacentHTML('beforeend',`<span class="dot num">${pend}</span>`);
+  updateBadges();
+  $('#welcome').hidden = !(S.view==='explore' && !S.q);
   const v=$('#view'); let h='';
   if(S.error) h+=`<div class="note">${esc(S.error)}</div>`;
   if(S.view==='explore'){
@@ -127,81 +197,78 @@ function render(){
     h+=`<div class="bar"><h2>${S.q?'Results':(S.cat==='all'?'Near you':CATS[S.cat].label)}</h2><span class="muted small num">${list.length} ${catL}${S.city?' in '+esc(S.city):''}</span></div>`;
     h+= list.length?`<div class="grid">${list.map(cardHTML).join('')}</div>`:(S.ready?`<div class="empty">${ICON.explore}<div>No listings match yet.</div><div class="small">Try another area or category, or be the first to post one.</div><a class="btn primary" href="#mine">Post a listing</a></div>`:'');
   } else if(S.view==='saved'){
-    if(!S.user){ v.innerHTML=h+`<div class="bar"><h2>Saved</h2></div>`+signInNote('save listings'); return; }
-    const list=S.listings.filter(it=>S.saved.has(it.id));
-    h+=`<div class="bar"><h2>Saved</h2><span class="muted small num">${list.length} saved</span></div>`;
-    h+= list.length?`<div class="grid">${list.map(cardHTML).join('')}</div>`:`<div class="empty">${ICON.saved}<div>Nothing saved yet.</div><div class="small">Tap Save on a listing to keep it here.</div></div>`;
-  } else if(S.view==='requests'){ h+=renderRequests(); }
+    h+=`<div class="bar"><h2>Saved</h2>${S.user?`<span class="muted small num">${S.saved.size} saved</span>`:''}</div>`;
+    if(!S.user) h+=signInNote('save listings');
+    else { const list=S.listings.filter(it=>S.saved.has(it.id));
+      h+= list.length?`<div class="grid">${list.map(cardHTML).join('')}</div>`:`<div class="empty">${ICON.saved}<div>Nothing saved yet.</div><div class="small">Tap Save on a listing to keep it here.</div></div>`; }
+  } else if(S.view==='requests'){ h+=renderInbox(); }
   else { h+=renderMine(); }
   v.innerHTML=h; loadPhotos(v);
 }
-function renderRequests(){
-  let h=`<div class="bar"><h2>Requests</h2>${S.user?`<div class="seg" role="group" aria-label="Request type">
-    <button type="button" data-rt="recv" aria-pressed="${S.reqTab==='recv'}">Received (${S.recv.length})</button>
-    <button type="button" data-rt="sent" aria-pressed="${S.reqTab==='sent'}">Sent (${S.sent.length})</button></div>`:''}</div>`;
-  if(!S.user) return h+signInNote('see your bookings and inquiries');
-  const list=S.reqTab==='recv'?S.recv:S.sent;
-  if(!list.length) return h+`<div class="empty">${ICON.requests}<div>${S.reqTab==='recv'?'No requests from customers yet.':'You haven’t sent any requests.'}</div><div class="small">${S.reqTab==='recv'?'When someone books or asks about your listing, it shows up here.':'Open a listing and tap the request button to contact a provider.'}</div></div>`;
-  return h+'<div class="list">'+list.map(r=>{
-    const k=catOf(r.cat); const recv=S.reqTab==='recv';
-    const who=recv?(r.fromName||'A customer'):(r.providerName||'Provider');
-    const when=[r.date1&&fmtDate(r.date1),r.date2&&('to '+fmtDate(r.date2)),r.time&&esc(r.time),r.qty&&('Qty '+esc(r.qty))].filter(Boolean).join(' · ');
-    let acts='';
-    if(recv&&r.status==='pending') acts=`<button class="btn sm primary" data-st="accepted" data-id="${esc(r.id)}">Accept</button><button class="btn sm danger" data-st="declined" data-id="${esc(r.id)}">Decline</button>`;
-    else if(recv&&r.status==='accepted') acts=`<button class="btn sm" data-st="done" data-id="${esc(r.id)}">Mark completed</button>`;
-    else if(!recv&&r.status==='pending') acts=`<button class="btn sm danger" data-st="cancelled" data-id="${esc(r.id)}">Cancel request</button>`;
-    const reply = recv&&(r.status==='pending'||r.status==='accepted') ? `<form class="replyf" data-id="${esc(r.id)}" style="flex-direction:row;gap:6px"><input type="text" id="reply-${esc(r.id)}" aria-label="Reply to customer" placeholder="Reply, e.g. Available 9am" value="${esc(r.reply||'')}" maxlength="300"><button class="btn sm">Send</button></form>`:'';
-    return `<div class="item"><div class="mini k-${k}">${ICON[k]}</div><div class="grow">
-      <div class="row"><span class="pill s-${esc(r.status)}">${STATUS[r.status]||esc(r.status)}</span><span class="small muted">${r.createdAt?ago(r.createdAt):''}</span></div>
-      <h3>${esc(r.itemTitle)}</h3>
-      <div class="small muted">${recv?'From':'To'} <strong style="color:var(--ink)">${esc(who)}</strong>${when?' · '+when:''}</div>
-      ${r.message?`<div class="quote">${esc(r.message)}</div>`:''}
-      ${recv&&r.contact?`<div class="small">Customer’s number: <a href="${esc(telHref(r.contact))}" class="num">${esc(r.contact)}</a></div>`:''}
-      ${!recv&&r.reply?`<div class="small muted">Provider replied:</div><div class="quote">${esc(r.reply)}</div>`:''}
-      ${!recv&&r.providerPhone?`<div class="small">Provider’s number: <a href="${esc(telHref(r.providerPhone))}" class="num">${esc(r.providerPhone)}</a></div>`:''}
-      ${reply}${acts?`<div class="row">${acts}</div>`:''}
-    </div></div>`;}).join('')+'</div>';
+function renderInbox(){
+  let h=`<div class="bar"><h2>Inbox</h2>${S.user?`<span class="muted small num">${unreadCount()} unread</span>`:''}</div>`;
+  if(!S.user) return h+signInNote('see your requests and messages');
+  if(canNotify()&&Notification.permission==='default') h+=`<div class="alertbar">${ICON.bell}<span>Get alerted when someone books you or replies.</span><button class="btn sm primary" data-notif>Turn on</button></div>`;
+  const list=threads();
+  if(!list.length) return h+`<div class="empty">${ICON.requests}<div>No requests yet.</div><div class="small">Requests you send and requests customers send you both show up here as conversations.</div></div>`;
+  return h+'<div class="list">'+list.map((t,i)=>{
+    const k=catOf(t.cat); const owner=roleOf(t)==='owner'; const un=isUnread(t);
+    const who=owner?(t.fromName||'A customer'):(t.providerName||'Provider');
+    const prev=t.lastMsg||t.message||'';
+    return `<button type="button" class="item${un?' unread':''}" style="--i:${Math.min(i,12)}" data-thread="${esc(t.id)}">
+      <div class="mini k-${k}">${ICON[k]}</div>
+      <div class="grow">
+        <div class="row" style="justify-content:space-between"><span class="role">${owner?'Customer request':'Your request'}</span><span class="small muted">${ago(lastAtOf(t))}</span></div>
+        <h3>${esc(t.itemTitle)}</h3>
+        <div class="row"><span class="pill s-${esc(t.status)}">${STATUS[t.status]||esc(t.status)}</span><span class="small muted">${owner?'From':'To'} <strong style="color:var(--ink)">${esc(who)}</strong></span></div>
+        ${prev?`<div class="preview">${t.lastFrom===S.user.uid?'You: ':''}${esc(prev)}</div>`:''}
+      </div>${un?'<span class="udot" aria-label="Unread"></span>':''}</button>`;}).join('')+'</div>';
 }
 function renderMine(){
   let h=`<div class="bar"><h2>My listings</h2>${S.user?`<button class="btn primary" data-new>${ICON.plus}Post a listing</button>`:''}</div>`;
-  if(!S.user) return h+signInNote('post your services, cars, apartments or products');
+  if(!S.user) return h+signInNote('post your services, vehicles, apartments or products');
   const me=S.profile;
   if(me) h+=`<div class="item"><div class="grow"><div class="small muted">Shown to customers as</div><h3>${esc(me.providerName||'')}</h3><div class="small num">${esc(me.phone||'')}</div></div><button class="btn sm" data-profile>Edit</button></div>`;
   const items=S.mineList;
-  if(!items.length) return h+`<div class="empty">${ICON.mine}<div>You have no listings yet.</div><div class="small">Offer a service, rent out a car or a room, or sell a product. It takes a minute.</div></div>`;
-  return h+'<div class="list">'+items.map(it=>{
+  if(!items.length) return h+`<div class="empty">${ICON.mine}<div>You have no listings yet.</div><div class="small">Offer a service, rent out a car, motorbike or room, or sell a product. It takes a minute.</div></div>`;
+  return h+'<div class="list">'+items.map((it,i)=>{
     const n=S.recv.filter(r=>r.itemId===it.id&&r.status==='pending').length;
-    return `<div class="item">${thumbHTML(it,'mini')}<div class="grow">
-      <div class="row">${it.active===false?'<span class="pill s-declined">Paused</span>':'<span class="pill s-accepted">Live</span>'}${n?`<span class="pill s-pending">${n} new request${n>1?'s':''}</span>`:''}</div>
+    return `<div class="item" style="--i:${Math.min(i,12)}">${thumbHTML(it,'mini')}<div class="grow">
+      <div class="row">${it.active===false?'<span class="pill s-declined">Paused</span>':'<span class="pill s-accepted">Live</span>'}${n?`<span class="pill s-pending">${n} new request${n>1?'s':''}</span>`:''}<span class="small muted">${photoCount(it)} photo${photoCount(it)===1?'':'s'}</span></div>
       <h3>${esc(it.title)}</h3><div class="small muted num">${peso(it.price)} / ${esc(UNITS[it.unit]||it.unit)} · ${esc(it.city)}</div>
       <div class="row"><button class="btn sm" data-edit="${esc(it.id)}">Edit</button><button class="btn sm" data-toggle="${esc(it.id)}">${it.active===false?'Go live':'Pause'}</button><button class="btn sm danger" data-del="${esc(it.id)}">Delete</button></div>
     </div></div>`;}).join('')+'</div>';
 }
 
 /* ---------- photos ---------- */
-const photoLoading=new Set();
+const photoLoading=new Map();
+function getPhoto(key){
+  if(S.photos.has(key)) return Promise.resolve(S.photos.get(key));
+  if(photoLoading.has(key)) return photoLoading.get(key);
+  const p=getDoc(doc(db,'photos',key)).then(d=>{ const src=d.exists()?safeImg(d.data().data):''; if(src) S.photos.set(key,src); return src; })
+    .catch(()=>'').finally(()=>photoLoading.delete(key));
+  photoLoading.set(key,p); return p;
+}
 function loadPhotos(root){
   if(!db) return;
   root.querySelectorAll('[data-photo][data-has="1"]').forEach(el=>{
-    const id=el.dataset.photo; if(S.photos.has(id)||photoLoading.has(id)) return;
-    photoLoading.add(id);
-    getDoc(doc(db,'photos',id)).then(d=>{
-      const src=d.exists()?safeImg(d.data().data):''; if(!src) return;
-      S.photos.set(id,src);
-      document.querySelectorAll(`[data-photo="${CSS.escape(id)}"]`).forEach(n=>{ if(!n.querySelector('img')) n.insertAdjacentHTML('beforeend',`<img alt="" src="${src}">`); });
-    }).catch(()=>{}).finally(()=>photoLoading.delete(id));
+    const key=el.dataset.photo; if(el.querySelector('img')) return;
+    getPhoto(key).then(src=>{ if(!src) return;
+      document.querySelectorAll(`[data-photo="${CSS.escape(key)}"]`).forEach(n=>{ if(!n.querySelector('img')) n.insertAdjacentHTML('beforeend',`<img alt="" src="${src}">`); });
+    });
   });
 }
 
 /* ---------- sheet ---------- */
-let lastFocus=null;
-function openSheet(title,body,onMount){
-  lastFocus=document.activeElement;
-  $('#sheet').innerHTML=`<div class="shead"><h2 id="sheetTitle">${title}</h2><button type="button" class="x" data-close aria-label="Close">${ICON.close}</button></div><div class="sbody">${body}</div>`;
-  $('#scrim').classList.add('open'); onMount&&onMount($('#sheet')); loadPhotos($('#sheet'));
-  setTimeout(()=>$('#sheet [data-close]')?.focus(),0);
+let lastFocus=null, onSheetClose=null;
+function openSheet(title,body,onMount,cls){
+  lastFocus=document.activeElement; onSheetClose?.(); onSheetClose=null;
+  const sh=$('#sheet'); sh.className='sheet'+(cls?' '+cls:'');
+  sh.innerHTML=`<div class="shead"><h2 id="sheetTitle">${title}</h2><button type="button" class="x" data-close aria-label="Close">${ICON.close}</button></div>${cls==='chat'?body:`<div class="sbody">${body}</div>`}`;
+  $('#scrim').classList.add('open'); onMount&&onMount(sh); loadPhotos(sh);
+  setTimeout(()=>sh.querySelector('[data-close]')?.focus(),0);
 }
-function closeSheet(){ $('#scrim').classList.remove('open'); $('#sheet').innerHTML=''; lastFocus?.focus?.(); }
+function closeSheet(){ onSheetClose?.(); onSheetClose=null; $('#scrim').classList.remove('open'); $('#sheet').innerHTML=''; lastFocus?.focus?.(); }
 $('#scrim').addEventListener('click',e=>{ if(e.target===$('#scrim')||e.target.closest('[data-close]')) closeSheet(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$('#scrim').classList.contains('open')) closeSheet(); });
 
@@ -214,10 +281,10 @@ function openSignIn(next){
     b.innerHTML=`<p class="muted" style="margin:0">Sign in to post listings, send requests and save favorites. Browsing is open to everyone.</p>
       <button class="btn gbtn" id="g-in">${ICON.google}Continue with Google</button>
       <div class="divider">or use email</div>
-      <form id="ef">
+      <form id="af">
         ${mode==='up'?'<label>Your name<input type="text" id="a-n" name="name" required maxlength="60" autocomplete="name"></label>':''}
-        <label>Email<input type="email" id="a-e" name="email" required autocomplete="email" style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px"></label>
-        <label>Password<input type="password" id="a-p" name="password" required minlength="6" autocomplete="${mode==='up'?'new-password':'current-password'}" style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px"></label>
+        <label>Email<input type="email" id="a-e" name="email" required autocomplete="email"></label>
+        <label>Password<input type="password" id="a-p" name="password" required minlength="6" autocomplete="${mode==='up'?'new-password':'current-password'}"></label>
         <div class="err" id="a-err" hidden></div>
         <button class="btn primary">${mode==='up'?'Create account':'Sign in'}</button>
       </form>
@@ -234,47 +301,66 @@ function openSignIn(next){
     b.querySelector('#a-mode').onclick=()=>{mode=mode==='in'?'up':'in'; draw(sh);};
     b.querySelector('#a-reset')?.addEventListener('click',async()=>{ const em=b.querySelector('#a-e').value.trim(); if(!em) return err('Type your email first, then tap Forgot password.');
       try{ await sendPasswordResetEmail(auth,em); toast('Check your email for a reset link.'); }catch(e){ err(authErr(e)); } });
-    b.querySelector('#ef').onsubmit=async e=>{ e.preventDefault(); const f=new FormData(e.target); const btn=e.target.querySelector('button'); btn.disabled=true;
+    b.querySelector('#af').onsubmit=async e=>{ e.preventDefault(); const f=new FormData(e.target); const btn=e.target.querySelector('button'); btn.disabled=true;
       try{
         if(mode==='up'){ const c=await createUserWithEmailAndPassword(auth,f.get('email'),f.get('password')); await updateProfile(c.user,{displayName:String(f.get('name')).trim()}); S.user=c.user; renderAcct(); }
         else await signInWithEmailAndPassword(auth,f.get('email'),f.get('password'));
         done();
       }catch(x){ btn.disabled=false; err(authErr(x)); } };
   };
-  const done=()=>{ closeSheet(); toast('You’re signed in.'); const n=afterSignIn; afterSignIn=null; n&&setTimeout(n,300); };
+  const done=()=>{ closeSheet(); toast('You’re signed in.'); const n=afterSignIn; afterSignIn=null; n&&setTimeout(n,400); };
   openSheet('Sign in to Renta.ph','',draw);
 }
 function openAccount(){
   const u=S.user;
   openSheet('Your account',`<div><h3>${esc(u.displayName||'Renta.ph user')}</h3><div class="small muted">${esc(u.email||'')}</div></div>
     ${S.isAdmin?'<div class="note">You’re an admin. You can remove any listing that breaks the rules.</div>':''}
-    <div class="row"><a class="btn" href="#mine" data-close>My listings</a><a class="btn" href="#requests" data-close>Requests</a></div>
+    <div class="row"><a class="btn" href="#mine" data-close>My listings</a><a class="btn" href="#requests" data-close>Inbox</a>${canNotify()&&Notification.permission!=='granted'?'<button class="btn" data-notif>Turn on alerts</button>':''}</div>
     <button class="btn danger" id="so">Sign out</button>`,sh=>{
     sh.querySelector('#so').onclick=async()=>{ await signOut(auth); closeSheet(); toast('Signed out.'); };
   });
 }
 const needUser = fn=>{ if(S.user) fn(); else openSignIn(fn); };
 
-/* ---------- listing detail & requests ---------- */
+/* ---------- listing detail ---------- */
 function findItem(id){ return S.listings.find(x=>x.id===id)||S.mineList.find(x=>x.id===id)||EXAMPLES.find(x=>x.id===id); }
+function activeRequest(itemId){ return S.sent.filter(r=>r.itemId===itemId&&(r.status==='pending'||r.status==='accepted')).sort((a,b)=>b.createdAt-a.createdAt)[0]; }
+function galleryHTML(it){
+  const k=catOf(it.cat); const n=Math.max(1,photoCount(it)); let slides='';
+  for(let i=0;i<n;i++){ const key=slotKey(it.id,i); const src=S.photos.get(key);
+    slides+=`<div class="slide k-${k}" data-photo="${esc(key)}" data-has="${photoCount(it)?1:0}">${ICON[k]}${src?`<img alt="Photo ${i+1} of ${esc(it.title)}" src="${src}">`:''}</div>`; }
+  return `<div class="gallery"><div class="slides" id="slides">${slides}</div>${n>1?`<span class="gcount num" id="gcount">1 / ${n}</span><div class="dots">${Array.from({length:n},(_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`:''}</div>`;
+}
 function openItem(id){
   const it=findItem(id); if(!it) return; const k=catOf(it.cat); const mine=S.user&&it.ownerId===S.user.uid; const saved=S.saved.has(id);
-  const body=`<div class="hero k-${k}" data-photo="${esc(id)}" data-has="${it.hasPhoto?1:0}">${ICON[k]}${S.photos.get(id)?`<img alt="" src="${S.photos.get(id)}">`:''}</div>
-    <div><div class="ctag" style="color:var(--c-${k})">${esc(CATS[k].one)} · ${esc(it.sub||'')}</div><h2 style="font-size:24px;margin-top:4px">${esc(it.title)}</h2></div>
-    <div class="price num" style="font-size:22px;padding:0">${peso(it.price)} <span>/ ${esc(UNITS[it.unit]||it.unit)}</span></div>
+  const req=!mine&&!it.example?activeRequest(id):null;
+  const action = mine?`<button class="btn" data-edit="${esc(it.id)}">Edit my listing</button>`
+    : req?'' : `<button class="btn accent" data-req="${esc(id)}">${esc(CATS[k].act)}</button>`;
+  const body=`${galleryHTML(it)}
+    <div><div class="ctag" style="color:var(--c-${k})">${esc(CATS[k].one)} · ${esc(it.sub||'')}</div><h2 style="font-size:25px;margin-top:4px">${esc(it.title)}</h2></div>
+    <div class="price num" style="font-size:24px;padding:0">${peso(it.price)} <span>/ ${esc(UNITS[it.unit]||it.unit)}</span></div>
     <div class="facts"><div class="fact"><b>Area</b>${esc(it.city)}</div><div class="fact"><b>Provider</b>${esc(it.providerName||'Provider')}</div></div>
     ${it.desc?`<div class="desc">${esc(it.desc)}</div>`:''}
+    ${req?`<div class="sentbox"><div class="row"><strong>You already sent a request</strong><span class="pill s-${esc(req.status)}">${STATUS[req.status]}</span></div>
+      <div class="small muted">Sent ${ago(req.createdAt)}${req.date1?' · for '+fmtDate(req.date1):''}. ${req.status==='pending'?'The provider will reply in your Inbox.':'Message the provider to finalize.'}</div>
+      <div class="row"><button class="btn primary sm" data-thread="${esc(req.id)}">${ICON.requests}Open conversation</button></div></div>`:''}
     ${it.example?'<div class="note">This is an example listing to show how Renta.ph works. You can’t book it.</div>':`
     <div class="row">
-      ${mine?`<button class="btn" data-edit="${esc(it.id)}">Edit my listing</button>`:`<button class="btn accent" data-req="${esc(id)}">${esc(CATS[k].act)}</button>`}
+      ${action}
       ${it.phone&&!mine?`<a class="btn" href="${esc(telHref(it.phone))}">${ICON.phone}<span class="num">${esc(it.phone)}</span></a>`:''}
       ${!mine?`<button class="btn" data-save="${esc(id)}" aria-pressed="${saved}">${saved?ICON.savedOn:ICON.saved}${saved?'Saved':'Save'}</button>`:''}
       ${S.isAdmin&&!mine?`<button class="btn danger" data-mod="${esc(id)}">Remove (admin)</button>`:''}
     </div>`}`;
-  openSheet(esc(CATS[k].one),body);
+  openSheet(esc(CATS[k].one),body,sh=>{
+    const sl=sh.querySelector('#slides'); if(!sl) return;
+    sl.addEventListener('scroll',()=>{ const i=Math.round(sl.scrollLeft/sl.clientWidth); const c=sh.querySelector('#gcount'); if(c) c.textContent=`${i+1} / ${sl.children.length}`;
+      sh.querySelectorAll('.dots i').forEach((d,j)=>d.classList.toggle('on',j===i)); },{passive:true});
+  });
 }
 function openRequest(id){
   const it=findItem(id); if(!it||it.example) return; const k=catOf(it.cat);
+  const existing=activeRequest(id); if(existing){ openThread(existing.id); return; }
+  if(S.user&&it.ownerId===S.user.uid){ toast('This is your own listing.'); return; }
   const today=new Date().toISOString().slice(0,10);
   let fields='';
   if(k==='services') fields=`<div class="two"><label>Preferred date<input type="date" id="r-d1" name="date1" min="${today}" required></label><label>Preferred time<input type="time" id="r-t" name="time"></label></div>`;
@@ -283,23 +369,89 @@ function openRequest(id){
   else fields=`<div class="two"><label>Quantity<input type="number" id="r-q" name="qty" min="1" value="1" required></label><label>Needed by<input type="date" id="r-d1" name="date1" min="${today}"></label></div>`;
   openSheet('Send a request',`<div class="small muted">To <strong style="color:var(--ink)">${esc(it.providerName)}</strong> for “${esc(it.title)}”</div>
     <form id="reqf">${fields}
-      <label>Message<textarea id="r-m" name="message" maxlength="800" placeholder="Hi! Is this available? Add details like address or what you need."></textarea></label>
+      <label>Message<textarea id="r-m" name="message" maxlength="800" placeholder="Hi! Is this available? Add details like your address or what you need."></textarea></label>
       <label>Your mobile number<span class="hint">Shared only with this provider so they can reach you.</span><input type="tel" id="r-c" name="contact" placeholder="09XX XXX XXXX" required maxlength="20"></label>
       <div class="err" id="r-err" hidden></div>
-      <button class="btn accent">Send request</button></form>`,sh=>{
+      <button class="btn accent" id="r-send">Send request</button></form>`,sh=>{
     sh.querySelector('#reqf').onsubmit=async e=>{
-      e.preventDefault(); const f=new FormData(e.target); const btn=e.target.querySelector('button'); const err=sh.querySelector('#r-err');
+      e.preventDefault(); const f=new FormData(e.target); const btn=sh.querySelector('#r-send'); const err=sh.querySelector('#r-err');
       const d1=f.get('date1')||'', d2=f.get('date2')||'';
       if(d2&&d1&&d2<d1){ err.hidden=false; err.textContent='The return date must be on or after the pick-up date.'; return; }
-      btn.disabled=true;
+      if(activeRequest(id)){ closeSheet(); openThread(activeRequest(id).id); return; }
+      btn.disabled=true; const now=Date.now(); const msg=String(f.get('message')||'').trim().slice(0,800);
       try{
-        await addDoc(collection(db,'inquiries'),{ownerId:it.ownerId,itemId:it.id,itemTitle:String(it.title).slice(0,80),cat:k,providerName:it.providerName||'',providerPhone:it.phone||'',
+        const data={ownerId:it.ownerId,itemId:it.id,itemTitle:String(it.title).slice(0,80),cat:k,providerName:it.providerName||'',providerPhone:it.phone||'',
           fromId:S.user.uid,fromName:(S.user.displayName||'').slice(0,60),date1:d1,date2:d2,time:f.get('time')||'',qty:String(f.get('qty')||'').slice(0,40),
-          message:String(f.get('message')||'').slice(0,800),contact:String(f.get('contact')||'').slice(0,20),status:'pending',reply:'',createdAt:Date.now(),updatedAt:Date.now()});
-        closeSheet(); toast('Request sent. You’ll see the reply under Requests.'); S.reqTab='sent';
+          message:msg,contact:String(f.get('contact')||'').slice(0,20),status:'pending',reply:'',createdAt:now,updatedAt:now,
+          lastMsg:(msg||'Sent a request').slice(0,140),lastAt:now,lastFrom:S.user.uid,fromSeen:now,ownerSeen:0};
+        const ref=await addDoc(collection(db,'inquiries'),data);
+        if(!S.sent.some(x=>x.id===ref.id)) S.sent=[{id:ref.id,...data},...S.sent];
+        closeSheet(); toast('Request sent. The provider will reply in your Inbox.');
+        setTimeout(()=>openThread(ref.id),350);
       }catch(x){ btn.disabled=false; toast(errText(x)); }
     };
   });
+}
+
+/* ---------- conversation ---------- */
+function threadById(id){ return threads().find(t=>t.id===id); }
+function threadInfoHTML(t){
+  const owner=roleOf(t)==='owner';
+  const when=[t.date1&&fmtDate(t.date1),t.date2&&('to '+fmtDate(t.date2)),t.time&&esc(t.time),t.qty&&('Qty '+esc(t.qty))].filter(Boolean).join(' · ');
+  let acts='';
+  if(owner&&t.status==='pending') acts=`<button class="btn sm primary" data-st="accepted" data-id="${esc(t.id)}">Accept</button><button class="btn sm danger" data-st="declined" data-id="${esc(t.id)}">Decline</button>`;
+  else if(owner&&t.status==='accepted') acts=`<button class="btn sm" data-st="done" data-id="${esc(t.id)}">Mark completed</button>`;
+  else if(!owner&&t.status==='pending') acts=`<button class="btn sm danger" data-st="cancelled" data-id="${esc(t.id)}">Cancel request</button>`;
+  const num = owner ? (t.contact?`Customer’s number: <a class="num" href="${esc(telHref(t.contact))}">${esc(t.contact)}</a>`:'')
+                    : (t.providerPhone?`Provider’s number: <a class="num" href="${esc(telHref(t.providerPhone))}">${esc(t.providerPhone)}</a>`:'');
+  return `<div class="row"><span class="role">${owner?'Customer request':'Your request'}</span><span class="pill s-${esc(t.status)}">${STATUS[t.status]||esc(t.status)}</span></div>
+    <div class="small"><strong>${esc(owner?(t.fromName||'A customer'):(t.providerName||'Provider'))}</strong>${when?' · '+when:''}</div>
+    ${num?`<div class="small">${num}</div>`:''}${acts?`<div class="row">${acts}</div>`:''}`;
+}
+function messagesHTML(t){
+  const me=S.user.uid; const out=[];
+  out.push({from:t.fromId,text:t.message||'Sent a request.',at:t.createdAt});
+  if(t.reply&&!threadMsgs.length) out.push({from:t.ownerId,text:t.reply,at:t.updatedAt||t.createdAt});
+  threadMsgs.forEach(m=>out.push(m));
+  return out.map(m=> m.kind==='status'
+    ? `<div class="msg sys">${esc(m.from===me?'You':(m.from===t.ownerId?(t.providerName||'Provider'):(t.fromName||'Customer')))} ${esc(String(m.text).toLowerCase())} · ${clock(m.at)}</div>`
+    : `<div class="msg ${m.from===me?'me':'them'}">${esc(m.text)}<time>${clock(m.at)}</time></div>`).join('');
+}
+function markSeen(t){
+  if(!t||!isUnread(t)) return;
+  const f=seenField(t); const now=Date.now(); t[f]=now; updateBadges();
+  updateDoc(doc(db,'inquiries',t.id),{[f]:now}).catch(()=>{});
+}
+function openThread(id){
+  const t=threadById(id); if(!t){ toast('That conversation isn’t available yet. Try again in a moment.'); return; }
+  threadMsgs=[];
+  openSheet(esc(t.itemTitle),`<div class="thread-info" id="tinfo">${threadInfoHTML(t)}</div>
+    <div class="msgs" id="msgs" aria-live="polite">${messagesHTML(t)}</div>
+    <form class="composer" id="composer"><textarea id="c-text" aria-label="Write a message" placeholder="Write a message…" maxlength="1000" rows="1"></textarea><button class="btn primary" id="c-send" aria-label="Send">${ICON.send}</button></form>`,sh=>{
+    S.openThread=id;
+    const box=sh.querySelector('#msgs'); const scroll=()=>box.scrollTop=box.scrollHeight; scroll();
+    threadUnsub=onSnapshot(query(collection(db,'inquiries',id,'messages'),orderBy('at','asc'),limit(300)),s=>{
+      threadMsgs=s.docs.map(d=>d.data()).filter(m=>m&&m.text);
+      const cur=threadById(id)||t; box.innerHTML=messagesHTML(cur); scroll(); markSeen(cur);
+    },()=>{});
+    markSeen(t);
+    const ta=sh.querySelector('#c-text');
+    ta.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey&&matchMedia('(pointer:fine)').matches){ e.preventDefault(); sh.querySelector('#composer').requestSubmit(); } });
+    sh.querySelector('#composer').onsubmit=async e=>{ e.preventDefault(); const text=ta.value.trim(); if(!text) return; const b=sh.querySelector('#c-send'); b.disabled=true;
+      try{ await sendMessage(threadById(id)||t,text); ta.value=''; }catch(x){ toast(errText(x)); } finally{ b.disabled=false; ta.focus(); } };
+  },'chat');
+  onSheetClose=()=>{ threadUnsub?.(); threadUnsub=null; S.openThread=null; threadMsgs=[]; if(S.view==='requests') render(); };
+}
+async function sendMessage(t,text,kind){
+  const now=Date.now(); const me=S.user.uid;
+  await addDoc(collection(db,'inquiries',t.id,'messages'),{from:me,text:text.slice(0,1000),at:now,...(kind?{kind}:{})});
+  await updateDoc(doc(db,'inquiries',t.id),{lastMsg:text.slice(0,140),lastAt:now,lastFrom:me,[seenField(t)]:now,updatedAt:now});
+}
+async function setStatus(id,st){
+  const t=threadById(id); if(!t) return;
+  const now=Date.now(); const me=S.user.uid;
+  await updateDoc(doc(db,'inquiries',id),{status:st,updatedAt:now,lastMsg:STATUS_MSG[st],lastAt:now,lastFrom:me,[seenField(t)]:now});
+  addDoc(collection(db,'inquiries',id,'messages'),{from:me,text:STATUS_MSG[st],at:now,kind:'status'}).catch(()=>{});
 }
 
 /* ---------- my listings ---------- */
@@ -307,10 +459,10 @@ function compress(file){
   return new Promise((res,rej)=>{
     const img=new Image(); const url=URL.createObjectURL(file);
     img.onload=()=>{ URL.revokeObjectURL(url);
-      let w=img.naturalWidth,h=img.naturalHeight,max=1080,q=.75,out='';
-      for(let i=0;i<5;i++){ const s=Math.min(1,max/Math.max(w,h)); const c=document.createElement('canvas'); c.width=Math.round(w*s); c.height=Math.round(h*s);
-        c.getContext('2d').drawImage(img,0,0,c.width,c.height); out=c.toDataURL('image/jpeg',q); if(out.length<220000) break; max*=.8; q=Math.max(.45,q-.08); }
-      out.length<290000?res(out):rej(new Error('big'));
+      let w=img.naturalWidth,h=img.naturalHeight,max=1000,q=.72,out='';
+      for(let i=0;i<6;i++){ const s=Math.min(1,max/Math.max(w,h)); const c=document.createElement('canvas'); c.width=Math.round(w*s); c.height=Math.round(h*s);
+        c.getContext('2d').drawImage(img,0,0,c.width,c.height); out=c.toDataURL('image/jpeg',q); if(out.length<170000) break; max*=.85; q=Math.max(.45,q-.07); }
+      out.length<280000?res(out):rej(new Error('big'));
     };
     img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('img'));};
     img.src=url;
@@ -326,9 +478,8 @@ function openProfile(after){
       const p={providerName:String(f.get('providerName')).trim(),phone:String(f.get('phone')).trim(),updatedAt:Date.now()};
       try{
         await setDoc(doc(db,'providers',S.user.uid),p); S.profile=p;
-        // keep name and number on existing listings in step
         await Promise.all(S.mineList.filter(x=>x.providerName!==p.providerName||x.phone!==p.phone).map(x=>updateDoc(doc(db,'listings',x.id),{providerName:p.providerName,phone:p.phone,updatedAt:Date.now()})));
-        closeSheet(); toast('Profile saved.'); render(); after&&after();
+        closeSheet(); toast('Profile saved.'); render(); after&&setTimeout(after,350);
       }catch(x){ b.disabled=false; toast(errText(x)); } };
   });
 }
@@ -336,6 +487,8 @@ function openEditor(id){
   if(!S.profile||!S.profile.providerName){ openProfile(()=>openEditor(id)); return; }
   const it=id?S.mineList.find(x=>x.id===id):null; const cat=it?.cat||(S.cat!=='all'?S.cat:'services');
   const subOpts=c=>CATS[c].subs.map(s=>`<option ${it?.sub===s?'selected':''}>${s}</option>`).join('');
+  const oldCount=it?photoCount(it):0;
+  let pics=[]; // {src, from: original slot index, or -1 for new}
   openSheet(it?'Edit listing':'New listing',`<form id="ef">
     <fieldset><legend>What are you offering?</legend><div class="radios">${Object.entries(CATS).map(([k,v])=>`<label><input type="radio" name="cat" value="${k}" ${k===cat?'checked':''}>${v.label}</label>`).join('')}</div></fieldset>
     <label>Type<select id="e-sub" name="sub">${subOpts(cat)}</select></label>
@@ -345,25 +498,40 @@ function openEditor(id){
     <label>Area<input type="text" id="e-c" name="city" list="citylist" required maxlength="40" value="${esc(it?.city||'')}" placeholder="e.g. Mandaue"></label>
     <datalist id="citylist">${CITIES.map(c=>`<option value="${c}">`).join('')}</datalist>
     <label>Details<span class="hint">Inclusions, schedule, requirements, location landmarks.</span><textarea id="e-d" name="desc" maxlength="1500">${esc(it?.desc||'')}</textarea></label>
-    <label>Photo<span class="hint">One clear photo helps a lot. It’s resized automatically.</span><input type="file" id="e-f" accept="image/*"></label>
-    <img class="photo-prev" id="e-prev" alt="" hidden>
+    <fieldset><legend>Photos <span class="small muted" id="e-pc" style="font-family:var(--body);font-weight:500"></span></legend>
+      <div class="small muted" style="margin-top:-6px">Add up to ${MAX_PHOTOS}. The first photo is the cover. They’re resized automatically.</div>
+      <div class="pgrid" id="e-grid"></div></fieldset>
     <div class="err" id="e-err" hidden></div>
     <button class="btn primary" id="e-save">${it?'Save changes':'Post listing'}</button></form>`,sh=>{
-    const f=sh.querySelector('#ef'); let photo=null;
-    const prev=sh.querySelector('#e-prev'); const cur=it&&S.photos.get(it.id); if(cur){prev.src=cur;prev.hidden=false;}
+    const f=sh.querySelector('#ef'); const grid=sh.querySelector('#e-grid'); const err=sh.querySelector('#e-err');
+    const showErr=m=>{err.hidden=!m; err.textContent=m||'';};
+    const drawPics=()=>{
+      grid.innerHTML=pics.map((p,i)=>`<div class="ptile"><img alt="Photo ${i+1}" src="${p.src}">${i===0?'<span class="cover">Cover</span>':''}<button type="button" class="rm" data-rm="${i}" aria-label="Remove photo ${i+1}">${ICON.close}</button></div>`).join('')
+        +(pics.length<MAX_PHOTOS?`<label class="padd">${ICON.camera}<span>Add photo</span><input type="file" id="e-f" accept="image/*" multiple aria-label="Add photos"></label>`:'');
+      sh.querySelector('#e-pc').textContent=`${pics.length} of ${MAX_PHOTOS}`;
+      const inp=sh.querySelector('#e-f'); if(inp) inp.onchange=async e=>{
+        const all=[...e.target.files]; const files=all.slice(0,MAX_PHOTOS-pics.length); let bad=0;
+        showErr(all.length>files.length?`Only ${MAX_PHOTOS} photos per listing. The extra ones were skipped.`:'');
+        for(const file of files){ try{ pics.push({src:await compress(file),from:-1}); }catch(_){ bad++; } drawPics(); }
+        if(bad) showErr(`${bad} photo${bad>1?'s':''} couldn’t be used. Try JPG or PNG.`);
+      };
+    };
+    grid.addEventListener('click',e=>{ const b=e.target.closest('[data-rm]'); if(!b) return; e.preventDefault(); pics.splice(Number(b.dataset.rm),1); drawPics(); });
+    drawPics();
+    if(it&&oldCount){ Promise.all(Array.from({length:oldCount},(_,i)=>getPhoto(slotKey(it.id,i)).then(src=>({src,from:i})))).then(arr=>{ pics=[...arr.filter(p=>p.src),...pics.filter(p=>p.from<0)].slice(0,MAX_PHOTOS); drawPics(); }); }
     f.addEventListener('change',e=>{ if(e.target.name==='cat'){ const c=e.target.value; sh.querySelector('#e-sub').innerHTML=subOpts(c); sh.querySelector('#e-u').value=CATS[c].unit; } });
-    sh.querySelector('#e-f').onchange=async e=>{ const file=e.target.files[0]; if(!file) return; const err=sh.querySelector('#e-err');
-      try{ photo=await compress(file); prev.src=photo; prev.hidden=false; err.hidden=true; }catch(_){ photo=null; err.hidden=false; err.textContent='That photo couldn’t be used. Try a JPG or PNG.'; } };
-    f.onsubmit=async e=>{ e.preventDefault(); const d=new FormData(f); const b=sh.querySelector('#e-save'); b.disabled=true;
+    f.onsubmit=async e=>{ e.preventDefault(); const d=new FormData(f); const b=sh.querySelector('#e-save'); b.disabled=true; b.textContent='Saving…';
       const ref=it?doc(db,'listings',it.id):doc(collection(db,'listings'));
       const rec={ownerId:S.user.uid,providerName:S.profile.providerName,phone:S.profile.phone,cat:d.get('cat'),sub:d.get('sub'),title:String(d.get('title')).trim(),
         price:Math.max(0,Number(d.get('price'))||0),unit:d.get('unit'),city:String(d.get('city')).trim(),desc:String(d.get('desc')||'').trim(),
-        hasPhoto:!!(photo||it?.hasPhoto),active:it?it.active!==false:true,createdAt:it?.createdAt||Date.now(),updatedAt:Date.now()};
+        photoCount:pics.length,hasPhoto:pics.length>0,active:it?it.active!==false:true,createdAt:it?.createdAt||Date.now(),updatedAt:Date.now()};
       try{
-        if(photo){ await setDoc(doc(db,'photos',ref.id),{ownerId:S.user.uid,data:photo}); S.photos.set(ref.id,photo); }
+        for(let i=0;i<pics.length;i++){ const key=slotKey(ref.id,i); if(pics[i].from===i) continue;
+          await setDoc(doc(db,'photos',key),{ownerId:S.user.uid,data:pics[i].src}); S.photos.set(key,pics[i].src); }
         await setDoc(ref,rec);
-        closeSheet(); toast(it?'Listing updated.':'Your listing is live.'); if(!it) location.hash='mine';
-      }catch(x){ b.disabled=false; toast(errText(x)); }
+        for(let i=pics.length;i<oldCount;i++){ const key=slotKey(ref.id,i); S.photos.delete(key); deleteDoc(doc(db,'photos',key)).catch(()=>{}); }
+        closeSheet(); toast(it?'Listing updated.':'Your listing is live.'); if(!it) location.hash='mine'; else render();
+      }catch(x){ b.disabled=false; b.textContent=it?'Save changes':'Post listing'; toast(errText(x)); }
     };
   });
 }
@@ -372,46 +540,47 @@ function confirmSheet(title,text,label,fn){
     sh.querySelector('#cf-yes').onclick=async e=>{ e.target.disabled=true; try{ await fn(); closeSheet(); }catch(x){ e.target.disabled=false; toast(errText(x)); } };
   });
 }
+function deletePhotos(it){ for(let i=0;i<photoCount(it);i++) deleteDoc(doc(db,'photos',slotKey(it.id,i))).catch(()=>{}); }
 
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
   const t=e.target.closest('button,[data-open]'); if(!t) return;
   const D=t.dataset;
   if(D.open) openItem(D.open);
+  else if(D.thread){ needUser(()=>openThread(D.thread)); }
   else if(D.signin!==undefined) openSignIn();
+  else if(D.notif!==undefined) enableNotifs();
   else if(D.req) needUser(()=>openRequest(D.req));
-  else if(D.rt){ S.reqTab=D.rt; render(); }
   else if(D.new!==undefined) openEditor(null);
   else if(D.profile!==undefined) openProfile();
   else if(D.edit) openEditor(D.edit);
   else if(D.toggle){ const it=S.mineList.find(x=>x.id===D.toggle); if(!it) return; t.disabled=true;
     updateDoc(doc(db,'listings',it.id),{active:it.active===false,updatedAt:Date.now()}).then(()=>toast(it.active===false?'Listing is live again.':'Listing paused.')).catch(x=>toast(errText(x))).finally(()=>t.disabled=false); }
   else if(D.del){ const id=D.del; const it=S.mineList.find(x=>x.id===id);
-    confirmSheet('Delete listing?','Customers won’t see it anymore. Requests you already received stay under Requests.','Delete',async()=>{
-      await deleteDoc(doc(db,'listings',id)); if(it?.hasPhoto) deleteDoc(doc(db,'photos',id)).catch(()=>{}); toast('Listing deleted.'); }); }
+    confirmSheet('Delete listing?','Customers won’t see it anymore. Conversations you already have stay in your Inbox.','Delete',async()=>{
+      await deleteDoc(doc(db,'listings',id)); if(it) deletePhotos(it); toast('Listing deleted.'); }); }
   else if(D.save){ const id=D.save; needUser(async()=>{ const s=new Set(S.saved); s.has(id)?s.delete(id):s.add(id);
       try{ await setDoc(doc(db,'users',S.user.uid,'private','saved'),{keys:[...s].slice(0,300)}); S.saved=s; openItem(id); toast(s.has(id)?'Saved.':'Removed from saved.'); }catch(x){ toast(errText(x)); } }); }
   else if(D.mod){ const id=D.mod; const it=findItem(id);
     confirmSheet('Remove this listing?','As an admin you can take down listings that break the rules.','Remove',async()=>{
-      await deleteDoc(doc(db,'listings',id)); if(it?.hasPhoto) deleteDoc(doc(db,'photos',id)).catch(()=>{}); toast('Listing removed.'); }); }
-  else if(D.st){ t.disabled=true; try{ await updateDoc(doc(db,'inquiries',D.id),{status:D.st,updatedAt:Date.now()}); toast(D.st==='accepted'?'Accepted. Call or text the customer to confirm.':'Request updated.'); }catch(x){ t.disabled=false; toast(errText(x)); } }
-});
-document.addEventListener('submit',async e=>{
-  const f=e.target.closest('.replyf'); if(!f) return; e.preventDefault();
-  const val=f.querySelector('input').value.trim(); const b=f.querySelector('button'); b.disabled=true;
-  try{ await updateDoc(doc(db,'inquiries',f.dataset.id),{reply:val.slice(0,300),updatedAt:Date.now()}); toast('Reply sent.'); }catch(x){ toast(errText(x)); } finally{ b.disabled=false; }
+      await deleteDoc(doc(db,'listings',id)); if(it) deletePhotos(it); toast('Listing removed.'); }); }
+  else if(D.st){ t.disabled=true; try{ await setStatus(D.id,D.st); toast(D.st==='accepted'?'Accepted. The customer was notified.':'Request updated.'); }catch(x){ t.disabled=false; toast(errText(x)); } }
 });
 
 /* ---------- data ---------- */
 const byNew=a=>a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0));
+function refreshOpenThread(){
+  if(!S.openThread) return; const t=threadById(S.openThread); if(!t) return;
+  const info=$('#tinfo'); if(info) info.innerHTML=threadInfoHTML(t);
+}
 function watchUser(u){
-  unsubs.forEach(f=>f()); unsubs=[]; S.recv=[]; S.sent=[]; S.mineList=[]; S.saved=new Set(); S.profile=null; S.isAdmin=false;
+  unsubs.forEach(f=>f()); unsubs=[]; S.recv=[]; S.sent=[]; S.mineList=[]; S.saved=new Set(); S.profile=null; S.isAdmin=false; known.recv=null; known.sent=null;
   if(!u){ render(); return; }
   const quiet=()=>{};
   unsubs.push(onSnapshot(doc(db,'providers',u.uid),d=>{ S.profile=d.exists()?d.data():null; if(S.view==='mine') render(); },quiet));
   unsubs.push(onSnapshot(query(collection(db,'listings'),where('ownerId','==',u.uid)),s=>{ S.mineList=byNew(s.docs.map(d=>({id:d.id,...d.data()}))); if(S.view==='mine') render(); },quiet));
-  unsubs.push(onSnapshot(query(collection(db,'inquiries'),where('ownerId','==',u.uid)),s=>{ S.recv=byNew(s.docs.map(d=>({id:d.id,...d.data()}))); render(); },quiet));
-  unsubs.push(onSnapshot(query(collection(db,'inquiries'),where('fromId','==',u.uid)),s=>{ S.sent=byNew(s.docs.map(d=>({id:d.id,...d.data()}))); if(S.view==='requests') render(); },quiet));
+  unsubs.push(onSnapshot(query(collection(db,'inquiries'),where('ownerId','==',u.uid)),s=>{ S.recv=byNew(s.docs.map(d=>({id:d.id,...d.data()}))); watchChanges('recv',S.recv); refreshOpenThread(); if(S.view==='requests'||S.view==='mine') render(); else updateBadges(); },quiet));
+  unsubs.push(onSnapshot(query(collection(db,'inquiries'),where('fromId','==',u.uid)),s=>{ S.sent=byNew(s.docs.map(d=>({id:d.id,...d.data()}))); watchChanges('sent',S.sent); refreshOpenThread(); if(S.view==='requests') render(); else updateBadges(); },quiet));
   unsubs.push(onSnapshot(doc(db,'users',u.uid,'private','saved'),d=>{ S.saved=new Set(d.exists()&&Array.isArray(d.data().keys)?d.data().keys:[]); if(S.view==='saved') render(); },quiet));
   getDoc(doc(db,'admins',u.uid)).then(d=>{ S.isAdmin=d.exists(); }).catch(()=>{});
 }
@@ -426,7 +595,7 @@ function start(){
   onSnapshot(query(collection(db,'listings'),orderBy('createdAt','desc'),limit(500)),s=>{
     clearTimeout(timer); S.error=''; S.ready=true;
     S.listings=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.title).map(x=>({...x,cat:catOf(x.cat)}));
-    render();
+    if(S.view==='explore'||S.view==='saved') render();
   },e=>{ clearTimeout(timer); S.ready=true; S.error='Listings couldn’t load. '+(e.code==='permission-denied'?'The database rules haven’t been published yet.':'Try reloading the page.'); render(); });
 }
 start();
