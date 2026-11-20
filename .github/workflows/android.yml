@@ -1,0 +1,64 @@
+name: Build Android app
+
+on:
+  push:
+    branches: [main]
+    paths: ['android/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Restore signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::error::Add the KEYSTORE_B64 and KEYSTORE_PASSWORD secrets in Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > android/app/release.jks
+
+      - name: Build APK and AAB
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: gradle -p android assembleRelease bundleRelease --no-daemon
+
+      - name: Collect files
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/release/app-release.apk dist/renta-ph.apk
+          cp android/app/build/outputs/bundle/release/app-release.aab dist/renta-ph.aab
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: renta-ph-android
+          path: dist/
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-v${{ github.run_number }}
+          name: Renta.ph Android app (build ${{ github.run_number }})
+          body: |
+            Install on Android: download **renta-ph.apk** and open it. If asked, allow installing apps from your browser.
+            The **.aab** file is for uploading to Google Play.
+          files: |
+            dist/renta-ph.apk
+            dist/renta-ph.aab
+          make_latest: true

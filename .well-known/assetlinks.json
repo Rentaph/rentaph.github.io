@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "ph.renta.app",
+    "sha256_cert_fingerprints": ["2D:72:64:1D:BE:E3:09:13:88:64:44:87:94:CB:D7:60:B8:A2:21:4D:54:3F:DB:17:E8:8C:04:E0:6B:44:1D:A9"]
+  }
+}]

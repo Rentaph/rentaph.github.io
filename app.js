@@ -329,7 +329,7 @@ function openAccount(){
   const u=S.user;
   openSheet('Your account',`<div><h3>${esc(u.displayName||'Renta.ph user')}</h3><div class="small muted">${esc(u.email||'')}</div></div>
     ${S.isAdmin?'<div class="note">You’re an admin. You can remove any listing that breaks the rules.</div>':''}
-    <div class="row"><a class="btn" href="#mine" data-close>My listings</a><a class="btn" href="#requests" data-close>Inbox</a>${canNotify()&&Notification.permission!=='granted'?'<button class="btn" data-notif>Turn on alerts</button>':''}</div>
+    <div class="row"><a class="btn" href="#mine" data-close>My listings</a><a class="btn" href="#requests" data-close>Inbox</a>${/Android/i.test(navigator.userAgent)&&!matchMedia('(display-mode: standalone)').matches&&!document.referrer.startsWith('android-app://')?'<a class="btn" href="https://github.com/ajcajandab-png/renta-ph/releases/latest/download/renta-ph.apk">Get the Android app</a>':''}${canNotify()&&Notification.permission!=='granted'?'<button class="btn" data-notif>Turn on alerts</button>':''}</div>
     <button class="btn danger" id="so">Sign out</button>`,sh=>{
     sh.querySelector('#so').onclick=async()=>{ await signOut(auth); closeSheet(); toast('Signed out.'); };
   });
