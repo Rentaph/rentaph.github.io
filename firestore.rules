@@ -80,6 +80,22 @@ service cloud.firestore {
       }
     }
 
+    // Ratings: one per completed request, written by that request's customer
+    match /reviews/{rid} {
+      function req() { return get(/databases/$(database)/documents/inquiries/$(rid)).data; }
+      function validReview() {
+        let d = request.resource.data;
+        return d.fromId == me()
+          && d.stars is int && d.stars >= 1 && d.stars <= 5
+          && str(d.text, 500) && str(d.fromName, 60)
+          && req().fromId == me() && req().ownerId == d.providerId && req().status == 'done';
+      }
+      allow read: if true;
+      allow create: if signedIn() && validReview();
+      allow update: if signedIn() && resource.data.fromId == me() && validReview();
+      allow delete: if isAdmin();
+    }
+
     // Each person's private data (saved listings)
     match /users/{uid}/{rest=**} {
       allow read, write: if signedIn() && me() == uid;

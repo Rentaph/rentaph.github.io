@@ -1,9 +1,10 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
-  createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, updateProfile, signOut }
+  createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, updateProfile, signOut, deleteUser }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, query, where, orderBy, limit, onSnapshot }
+import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, query, where, orderBy, limit, onSnapshot, arrayUnion }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getMessaging, getToken, isSupported } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js';
 
 /* ---------- constants ---------- */
 const ICON = {
@@ -23,6 +24,7 @@ const ICON = {
   camera:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg>',
   send:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12 20 4l-6 16-3-7z"/></svg>',
   bell:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg>',
+  star:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4L2.8 9.5l6.4-.8z"/></svg>',
   google:'<svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.6 12.3c0-.8-.1-1.5-.2-2.3H12v4.3h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.7c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.8 14.2a6.6 6.6 0 0 1 0-4.3V7.1H2.1a11 11 0 0 0 0 9.9z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3 .6 4.2 1.6l3.1-3.1A11 11 0 0 0 2.1 7.1l3.7 2.8C6.7 7.3 9.1 5.4 12 5.4z"/></svg>'
 };
 const CATS = {
@@ -47,8 +49,8 @@ const EXAMPLES = [
 
 /* ---------- state ---------- */
 const S = {user:null,isAdmin:false,ready:false,error:'',profile:null,
-  listings:[],mineList:[],recv:[],sent:[],saved:new Set(),cat:'all',q:'',city:'',view:'explore',photos:new Map(),openThread:null};
-let auth=null, db=null, unsubs=[], threadUnsub=null, threadMsgs=[];
+  listings:[],reviews:[],mineList:[],recv:[],sent:[],saved:new Set(),cat:'all',q:'',city:'',view:'explore',photos:new Map(),openThread:null};
+let auth=null, db=null, fbApp=null, unsubs=[], threadUnsub=null, threadMsgs=[];
 
 const $ = s=>document.querySelector(s);
 const esc = v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -60,6 +62,9 @@ const telHref = p=>'tel:'+String(p||'').replace(/[^\d+]/g,'');
 const safeImg = u=>/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(u||'')?u:'';
 const catOf = c=>CATS[c]?c:'services';
 const slotKey = (id,n)=>n?`${id}_${n}`:id;
+function ratingOf(providerId){ const r=S.reviews.filter(x=>x.providerId===providerId); if(!r.length) return null; return {avg:r.reduce((s,x)=>s+(Number(x.stars)||0),0)/r.length,count:r.length,list:r}; }
+const starsTxt = n=>'★'.repeat(Math.round(n))+'☆'.repeat(5-Math.round(n));
+function ratingBadge(providerId,long){ const r=ratingOf(providerId); if(!r) return long?'<span class="muted">No reviews yet</span>':''; return `<span class="rating">${ICON.star}<b class="num">${r.avg.toFixed(1)}</b><span class="muted">(${r.count}${long?` review${r.count>1?'s':''}`:''})</span></span>`; }
 const photoCount = it=>Math.min(MAX_PHOTOS,Number(it.photoCount ?? (it.hasPhoto?1:0))||0);
 
 function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove('show'),3600); }
@@ -102,6 +107,7 @@ async function enableNotifs(){
   if(!canNotify()) return toast('This browser can’t show notifications.');
   const p=await Notification.requestPermission();
   toast(p==='granted'?'Alerts are on. You’ll be notified about new requests and replies.':'Alerts are off. You can turn them on in your browser settings.');
+  if(p==='granted') registerPush();
   render();
 }
 function notify(title,body,threadId){
@@ -177,6 +183,7 @@ function cardHTML(it,i){
       <div class="ctag" style="color:var(--c-${k})">${esc(it.sub||CATS[k].one)}</div>
       <h3>${esc(it.title)}</h3>
       <div class="prov">${esc(it.providerName||'Provider')} · ${esc(it.city||'')}</div>
+      ${ratingBadge(it.ownerId)}
       <div class="price num">${peso(it.price)} <span>/ ${esc(UNITS[it.unit]||CATS[k].unit)}</span></div>
     </div></button>`;
 }
@@ -330,7 +337,8 @@ function openAccount(){
   openSheet('Your account',`<div><h3>${esc(u.displayName||'Renta.ph user')}</h3><div class="small muted">${esc(u.email||'')}</div></div>
     ${S.isAdmin?'<div class="note">You’re an admin. You can remove any listing that breaks the rules.</div>':''}
     <div class="row"><a class="btn" href="#mine" data-close>My listings</a><a class="btn" href="#requests" data-close>Inbox</a>${/Android/i.test(navigator.userAgent)&&!matchMedia('(display-mode: standalone)').matches&&!document.referrer.startsWith('android-app://')?'<a class="btn" href="https://github.com/Rentaph/rentaph.github.io/releases/latest/download/renta-ph.apk">Get the Android app</a>':''}${canNotify()&&Notification.permission!=='granted'?'<button class="btn" data-notif>Turn on alerts</button>':''}</div>
-    <button class="btn danger" id="so">Sign out</button>`,sh=>{
+    <button class="btn danger" id="so">Sign out</button>
+    <div class="small muted row" style="justify-content:space-between"><span><a href="privacy.html">Privacy policy</a> · <a href="terms.html">Terms</a></span><button class="linkbtn small" data-delacct style="color:var(--bad)">Delete my account</button></div>`,sh=>{
     sh.querySelector('#so').onclick=async()=>{ await signOut(auth); closeSheet(); toast('Signed out.'); };
   });
 }
@@ -355,6 +363,7 @@ function openItem(id){
     <div class="price num" style="font-size:24px;padding:0">${peso(it.price)} <span>/ ${esc(UNITS[it.unit]||it.unit)}</span></div>
     <div class="facts"><div class="fact"><b>Area</b>${esc(it.city)}</div><div class="fact"><b>Provider</b>${esc(it.providerName||'Provider')}</div></div>
     ${it.desc?`<div class="desc">${esc(it.desc)}</div>`:''}
+    ${it.example?'':reviewsHTML(it)}
     ${req?`<div class="sentbox"><div class="row"><strong>You already sent a request</strong><span class="pill s-${esc(req.status)}">${STATUS[req.status]}</span></div>
       <div class="small muted">Sent ${ago(req.createdAt)}${req.date1?' · for '+fmtDate(req.date1):''}. ${req.status==='pending'?'The provider will reply in your Inbox.':'Message the provider to finalize.'}</div>
       <div class="row"><button class="btn primary sm" data-thread="${esc(req.id)}">${ICON.requests}Open conversation</button></div></div>`:''}
@@ -420,7 +429,34 @@ function threadInfoHTML(t){
                     : (t.providerPhone?`Provider’s number: <a class="num" href="${esc(telHref(t.providerPhone))}">${esc(t.providerPhone)}</a>`:'');
   return `<div class="row"><span class="role">${owner?'Customer request':'Your request'}</span><span class="pill s-${esc(t.status)}">${STATUS[t.status]||esc(t.status)}</span></div>
     <div class="small"><strong>${esc(owner?(t.fromName||'A customer'):(t.providerName||'Provider'))}</strong>${when?' · '+when:''}</div>
-    ${num?`<div class="small">${num}</div>`:''}${acts?`<div class="row">${acts}</div>`:''}`;
+    ${num?`<div class="small">${num}</div>`:''}${acts?`<div class="row">${acts}</div>`:''}${threadReviewHTML(t)}`;
+}
+function reviewsHTML(it){
+  const r=ratingOf(it.ownerId);
+  if(!r) return `<div class="reviews"><div class="row"><strong>Reviews</strong>${ratingBadge(it.ownerId,true)}</div><div class="small muted">Customers can rate ${esc(it.providerName||'this provider')} after a completed request.</div></div>`;
+  return `<div class="reviews"><div class="row"><strong>Reviews of ${esc(it.providerName||'this provider')}</strong>${ratingBadge(it.ownerId,true)}</div>
+    ${r.list.slice(0,4).map(v=>`<div class="review"><div class="row"><span class="stars" aria-label="${v.stars} out of 5">${starsTxt(v.stars)}</span><span class="small muted">${esc(v.fromName||'Customer')} · ${ago(v.at)}</span></div>${v.text?`<div class="small">${esc(v.text)}</div>`:''}<div class="small muted">${esc(v.itemTitle||'')}</div></div>`).join('')}
+    ${r.count>4?`<div class="small muted">and ${r.count-4} more</div>`:''}</div>`;
+}
+function threadReviewHTML(t){
+  if(t.status!=='done') return '';
+  const v=S.reviews.find(x=>x.id===t.id); const owner=roleOf(t)==='owner';
+  if(v) return `<div class="review"><div class="row"><span class="stars">${starsTxt(v.stars)}</span><span class="small muted">${owner?esc(v.fromName||'Customer')+' rated you':'Your rating'}</span>${!owner?`<button class="linkbtn small" data-rate="${esc(t.id)}">Edit</button>`:''}</div>${v.text?`<div class="small">${esc(v.text)}</div>`:''}</div>`;
+  return owner?'':`<button class="btn sm accent" data-rate="${esc(t.id)}">${ICON.star}Rate ${esc(t.providerName||'the provider')}</button>`;
+}
+function openReview(id){
+  const t=threadById(id); if(!t) return; const old=S.reviews.find(x=>x.id===id);
+  const prevThread=S.openThread;
+  openSheet('Rate '+esc(t.providerName||'the provider'),`<div class="small muted">For “${esc(t.itemTitle)}”</div>
+    <form id="rvf"><fieldset><legend>How was it?</legend><div class="starpick" role="radiogroup" aria-label="Stars">
+      ${[5,4,3,2,1].map(n=>`<label><input type="radio" name="stars" value="${n}" ${old&&old.stars===n?'checked':''} required><span aria-hidden="true">★</span><span class="sr">${n} star${n>1?'s':''}</span></label>`).join('')}</div></fieldset>
+      <label>Comment<span class="hint">Optional. What went well, or what could be better?</span><textarea id="rv-t" name="text" maxlength="500">${esc(old?.text||'')}</textarea></label>
+      <button class="btn primary" id="rv-save">${old?'Update rating':'Post rating'}</button></form>`,sh=>{
+    sh.querySelector('#rvf').onsubmit=async e=>{ e.preventDefault(); const f=new FormData(e.target); const b=sh.querySelector('#rv-save'); b.disabled=true;
+      const data={providerId:t.ownerId,itemId:t.itemId,itemTitle:String(t.itemTitle||'').slice(0,80),fromId:S.user.uid,fromName:(S.user.displayName||'Customer').slice(0,60),stars:Number(f.get('stars')),text:String(f.get('text')||'').trim().slice(0,500),at:Date.now()};
+      try{ await setDoc(doc(db,'reviews',id),data); toast('Thanks! Your rating is posted.'); closeSheet(); if(prevThread) setTimeout(()=>openThread(prevThread),300); }
+      catch(x){ b.disabled=false; toast(errText(x)); } };
+  });
 }
 function messagesHTML(t){
   const me=S.user.uid; const out=[];
@@ -556,12 +592,36 @@ function confirmSheet(title,text,label,fn){
 }
 function deletePhotos(it){ for(let i=0;i<photoCount(it);i++) deleteDoc(doc(db,'photos',slotKey(it.id,i))).catch(()=>{}); }
 
+/* ---------- account deletion ---------- */
+function confirmDeleteAccount(){
+  confirmSheet('Delete your account?','This removes your listings, photos, provider profile and saved items, then deletes your sign-in. Conversations you already had stay visible to the other person. This can’t be undone.','Delete my account',async()=>{
+    const uid=S.user.uid;
+    for(const it of S.mineList){ deletePhotos(it); await deleteDoc(doc(db,'listings',it.id)); }
+    await Promise.all([deleteDoc(doc(db,'providers',uid)),deleteDoc(doc(db,'users',uid,'private','saved')),deleteDoc(doc(db,'users',uid,'private','push'))].map(p=>p.catch(()=>{})));
+    try{ await deleteUser(auth.currentUser); toast('Your account was deleted.'); }
+    catch(e){ if(e.code==='auth/requires-recent-login'){ toast('Your listings were removed. For security, sign out, sign in again, then tap Delete my account once more.'); } else throw e; }
+  });
+}
+
+/* ---------- push alerts (work when the app is closed) ---------- */
+async function registerPush(){
+  try{
+    const vapid=window.RENTA_VAPID; if(!S.user||!vapid||!canNotify()||Notification.permission!=='granted') return;
+    if(!(await isSupported())) return;
+    const reg=swReg||await navigator.serviceWorker.ready;
+    const token=await getToken(getMessaging(fbApp),{vapidKey:vapid,serviceWorkerRegistration:reg});
+    if(token) await setDoc(doc(db,'users',S.user.uid,'private','push'),{tokens:arrayUnion(token),updatedAt:Date.now()},{merge:true});
+  }catch(_){}
+}
+
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
   const t=e.target.closest('button,[data-open]'); if(!t) return;
   const D=t.dataset;
   if(D.open) openItem(D.open);
   else if(D.thread){ needUser(()=>openThread(D.thread)); }
+  else if(D.rate){ openReview(D.rate); }
+  else if(D.delacct!==undefined){ confirmDeleteAccount(); }
   else if(D.clear){ if(D.clear==='city'){ S.city=''; $('#city').value=''; } if(D.clear==='cat'){ S.cat='all'; document.querySelectorAll('#cats button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.cat==='all')); } if(D.clear==='q'){ S.q=''; $('#q').value=''; } render(); }
   else if(D.signin!==undefined) openSignIn();
   else if(D.notif!==undefined) enableNotifs();
@@ -603,9 +663,13 @@ function start(){
   buildShell(); route();
   const cfg=window.RENTA_FIREBASE;
   if(!cfg||!cfg.apiKey||cfg.apiKey.startsWith('PASTE')){ S.error='Renta.ph isn’t connected to its database yet. The owner needs to add the Firebase settings in config.js.'; S.ready=true; render(); return; }
-  const app=initializeApp(cfg); auth=getAuth(app); db=getFirestore(app);
+  const app=initializeApp(cfg); fbApp=app; auth=getAuth(app); db=getFirestore(app);
   getRedirectResult(auth).then(r=>{ if(r) toast('You’re signed in.'); }).catch(e=>toast(authErr(e)));
-  onAuthStateChanged(auth,u=>{ S.user=u; renderAcct(); watchUser(u); });
+  onAuthStateChanged(auth,u=>{ S.user=u; renderAcct(); watchUser(u); if(u) registerPush(); });
+  onSnapshot(query(collection(db,'reviews'),orderBy('at','desc'),limit(1000)),s=>{
+    S.reviews=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.providerId&&x.stars>=1&&x.stars<=5);
+    if(S.view==='explore'||S.view==='saved') render(); refreshOpenThread();
+  },()=>{});
   const timer=setTimeout(()=>{ if(!S.ready){ S.error='Listings can’t be reached yet. Check your connection; this page keeps trying.'; render(); } },10000);
   onSnapshot(query(collection(db,'listings'),orderBy('createdAt','desc'),limit(500)),s=>{
     clearTimeout(timer); S.error=''; S.ready=true;

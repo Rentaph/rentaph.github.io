@@ -22,7 +22,7 @@ const peso = n=>'₱'+Number(n||0).toLocaleString('en-PH',{maximumFractionDigits
 const safeImg = u=>/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(u||'')?u:'';
 const catOf = c=>ICON[c]?c:'services';
 const grid=document.getElementById('ex-grid'), chips=document.getElementById('ex-chips'), q=document.getElementById('ex-q'), allBtn=document.getElementById('ex-all');
-let items=[], cat='all', db=null, isExamples=false; const photos=new Map();
+let items=[], cat='all', db=null, isExamples=false, rating={}; const photos=new Map();
 
 chips.innerHTML=Object.entries(CATS).map(([k,l])=>`<button type="button" data-c="${k}" aria-pressed="${k==='all'}">${l}</button>`).join('');
 chips.onclick=e=>{ const b=e.target.closest('[data-c]'); if(!b) return; cat=b.dataset.c; chips.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b)); allBtn.href='app.html#'+(cat==='all'?'explore':'explore-'+cat); draw(); };
@@ -35,6 +35,7 @@ function card(it,i){
     <div class="lthumb k-${k}" data-pid="${esc(it.id)}">${ICON[k]}${src?`<img alt="" src="${src}">`:''}</div>
     <div class="lbody"><div class="ltag" style="color:${COLOR[k]}">${esc(it.sub||CATS[k])}</div><h3>${esc(it.title)}</h3>
     <div class="lprov">${esc(it.providerName||'Provider')} · ${esc(it.city||'')}</div>
+    ${rating[it.ownerId]?`<div class="lrate">★ <b>${rating[it.ownerId].avg.toFixed(1)}</b> <span>(${rating[it.ownerId].n})</span></div>`:''}
     <div class="lprice">${peso(it.price)} <span>/ ${esc(it.unit||'')}</span></div></div></a>`;
 }
 function draw(){
@@ -53,6 +54,8 @@ async function load(){
     db=getFirestore(initializeApp(cfg));
     const s=await getDocs(query(collection(db,'listings'),orderBy('createdAt','desc'),limit(60)));
     items=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.title&&x.active!==false);
+    try{ const r=await getDocs(query(collection(db,'reviews'),orderBy('at','desc'),limit(1000)));
+      r.docs.forEach(d=>{ const v=d.data(); if(!(v.stars>=1&&v.stars<=5)) return; const o=rating[v.providerId]||(rating[v.providerId]={sum:0,n:0}); o.sum+=v.stars; o.n++; o.avg=o.sum/o.n; }); }catch(_){}
   }catch(_){ items=[]; }
   if(!items.length){ items=EXAMPLES; isExamples=true; }
   draw();

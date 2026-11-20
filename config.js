@@ -1,6 +1,6 @@
 // Firebase web settings for Renta.ph. These are safe to publish: the rules in
 // firestore.rules are what protect the data.
-window.RENTA_FIREBASE = {
+self.RENTA_FIREBASE = {
   apiKey: "AIzaSyAtFOQIxaSrXdinJ4bYORY9u5mCGItn2cM",
   authDomain: "renta-ph-856ae.firebaseapp.com",
   projectId: "renta-ph-856ae",
@@ -9,3 +9,8 @@ window.RENTA_FIREBASE = {
   appId: "1:18762002397:web:484855ad11bf126e335034",
   measurementId: "G-BHXBM00MJG"
 };
+
+// Support email shown in the privacy policy and terms.
+self.RENTA_SUPPORT_EMAIL = "";
+// Public "Web Push certificate" key from Firebase > Project settings > Cloud Messaging.
+self.RENTA_VAPID = "";
