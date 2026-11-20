@@ -1,0 +1,77 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function isAdmin() { return signedIn() && exists(/databases/$(database)/documents/admins/$(me())); }
+    function str(v, max) { return v is string && v.size() <= max; }
+
+    // Provider profile: public, only the owner edits it
+    match /providers/{uid} {
+      allow read: if true;
+      allow write: if signedIn() && me() == uid
+        && str(request.resource.data.providerName, 60) && str(request.resource.data.phone, 20);
+    }
+
+    // Listings: anyone can browse; owners create and edit their own; admins can remove
+    match /listings/{id} {
+      function valid() {
+        let d = request.resource.data;
+        return d.ownerId == me()
+          && str(d.title, 80) && d.title.size() > 0
+          && d.price is number && d.price >= 0 && d.price < 100000000
+          && d.cat in ['services', 'cars', 'apartments', 'products']
+          && str(d.city, 40) && str(d.desc, 1500)
+          && str(d.providerName, 60) && str(d.phone, 20)
+          && d.active is bool;
+      }
+      allow read: if true;
+      allow create: if signedIn() && valid();
+      allow update: if signedIn() && resource.data.ownerId == me() && valid();
+      allow delete: if signedIn() && (resource.data.ownerId == me() || isAdmin());
+    }
+
+    // Listing photos (small compressed images)
+    match /photos/{id} {
+      allow read: if true;
+      allow create: if signedIn() && request.resource.data.ownerId == me()
+        && request.resource.data.data is string && request.resource.data.data.size() < 300000;
+      allow update: if signedIn() && resource.data.ownerId == me() && request.resource.data.ownerId == me()
+        && request.resource.data.data is string && request.resource.data.data.size() < 300000;
+      allow delete: if signedIn() && (resource.data.ownerId == me() || isAdmin());
+    }
+
+    // Requests: only the customer and the provider can see them
+    match /inquiries/{id} {
+      allow read: if signedIn() && (resource.data.ownerId == me() || resource.data.fromId == me());
+      allow create: if signedIn()
+        && request.resource.data.fromId == me()
+        && request.resource.data.ownerId != me()
+        && request.resource.data.status == 'pending'
+        && str(request.resource.data.message, 800)
+        && str(request.resource.data.contact, 20) && request.resource.data.contact.size() > 0;
+      allow update: if signedIn() && (
+        (resource.data.ownerId == me()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reply', 'updatedAt'])
+          && request.resource.data.status in ['pending', 'accepted', 'declined', 'done']
+          && str(request.resource.data.reply, 300))
+        ||
+        (resource.data.fromId == me()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+          && request.resource.data.status == 'cancelled')
+      );
+      allow delete: if false;
+    }
+
+    // Each person's private data (saved listings)
+    match /users/{uid}/{rest=**} {
+      allow read, write: if signedIn() && me() == uid;
+    }
+
+    // Admin list: managed by the owner in the Firebase console
+    match /admins/{uid} {
+      allow read: if signedIn() && me() == uid;
+      allow write: if false;
+    }
+  }
+}
