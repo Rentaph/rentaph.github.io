@@ -232,3 +232,7 @@ textarea{min-height:90px;resize:vertical}
 .starpick label:hover,.starpick label:hover~label,.starpick label:has(input:checked),.starpick label:has(input:checked)~label{color:var(--accent)}
 .starpick label:has(input:focus-visible){outline:3px solid var(--accent);border-radius:6px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+.addr{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px 14px}
+.addr legend{padding:0 4px}
+.addr select:disabled{opacity:.6}

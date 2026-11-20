@@ -36,8 +36,44 @@ const CATS = {
 const UNITS = {hour:'hour',job:'job',visit:'visit',day:'day',night:'night',month:'month',item:'item'};
 const PLACES = window.PH_PLACES||[];
 const provOf = it=>it.province||(window.phProvinceOf?phProvinceOf(it.city):'')||'';
-const areasOf = prov=>{ const p=PLACES.flatMap(r=>r.provinces).find(x=>x.name===prov); return p?p.areas:[]; };
-const areaLabel = ()=>S.city?S.city:(S.prov||'');
+const areasOf = prov=>(window.phCities?phCities(prov):[]).map(c=>c.n);
+const normArea = s=>String(s||'').toLowerCase().replace(/\bcity of\b|\bcity\b/g,'').replace(/[^a-z0-9ñ]+/g,' ').trim();
+const sameArea = (x,y)=>normArea(x)===normArea(y);
+const placeLine = it=>[it.barangay,it.city,provOf(it)].filter((v,i,arr)=>v&&arr.findIndex(w=>sameArea(w,v))===i).join(', ');
+let lastAddr={}; try{ lastAddr=JSON.parse(localStorage.getItem('renta-addr')||'{}'); }catch(_){}
+function addrHTML(id,v,opt){
+  v=v||{}; opt=opt||{};
+  return `<fieldset class="addr"><legend>${opt.legend||'Location'}</legend>
+    <div class="two"><label>Province<select id="${id}-prov" name="${id}-prov" required>${provOptions(v.province||'','Choose province…')}</select></label>
+    <label>City / Municipality<select id="${id}-city" name="${id}-city" required disabled><option value="">Choose city…</option></select></label></div>
+    <label>Barangay<select id="${id}-brgy" name="${id}-brgy" ${opt.brgyRequired?'required':''} disabled><option value="">Choose barangay…</option></select></label>
+    ${opt.street?`<label>${opt.streetLabel||'House no., street, landmark'}<input type="text" id="${id}-street" name="${id}-street" maxlength="120" value="${esc(v.street||'')}" ${opt.streetRequired?'required':''} placeholder="e.g. 123 Rizal St., near the chapel"></label>`:''}
+    ${opt.hint?`<div class="small muted">${opt.hint}</div>`:''}</fieldset>`;
+}
+function addrMount(sh,id,v){
+  v=v||{};
+  const prov=sh.querySelector('#'+id+'-prov'), city=sh.querySelector('#'+id+'-city'), brgy=sh.querySelector('#'+id+'-brgy');
+  const loadBrgy=async keep=>{
+    const code=city.selectedOptions[0]?.dataset.code; brgy.disabled=true;
+    if(!code){ brgy.innerHTML='<option value="">Choose barangay…</option>'; return; }
+    brgy.innerHTML='<option value="">Loading barangays…</option>';
+    const list=await phBarangays(prov.value,code);
+    if(city.selectedOptions[0]?.dataset.code!==code) return;
+    brgy.innerHTML='<option value="">Choose barangay…</option>'+list.map(b=>`<option ${b===keep?'selected':''}>${esc(b)}</option>`).join('');
+    brgy.disabled=!list.length;
+  };
+  const loadCities=keep=>{
+    const list=window.phCities?phCities(prov.value):[];
+    city.innerHTML='<option value="">Choose city or municipality…</option>'+list.map(c=>`<option value="${esc(c.n)}" data-code="${c.c}">${esc(c.n)}</option>`).join('');
+    city.disabled=!prov.value;
+    if(keep){ const m=list.find(c=>sameArea(c.n,keep)); if(m) city.value=m.n; }
+    loadBrgy(v.barangay);
+  };
+  prov.addEventListener('change',()=>loadCities()); city.addEventListener('change',()=>loadBrgy());
+  if(prov.value) loadCities(v.city);
+  return ()=>({province:prov.value,city:city.value,barangay:brgy.disabled?'':brgy.value,street:(sh.querySelector('#'+id+'-street')?.value||'').trim()});
+}
+const areaLabel = ()=>S.brgy?S.brgy+', '+S.city:(S.city?S.city:(S.prov||''));
 function provOptions(sel,allLabel){ return `<option value="">${allLabel}</option>`+PLACES.map(r=>`<optgroup label="${esc(r.region)}">${r.provinces.map(p=>`<option ${p.name===sel?'selected':''}>${esc(p.name)}</option>`).join('')}</optgroup>`).join(''); }
 const STATUS = {pending:'Waiting for reply',accepted:'Accepted',declined:'Declined',cancelled:'Cancelled',done:'Completed'};
 const STATUS_MSG = {accepted:'Accepted the request',declined:'Declined the request',done:'Marked the request as completed',cancelled:'Cancelled the request'};
@@ -53,7 +89,7 @@ const EXAMPLES = [
 
 /* ---------- state ---------- */
 const S = {user:null,isAdmin:false,ready:false,error:'',profile:null,
-  listings:[],reviews:[],mineList:[],recv:[],sent:[],saved:new Set(),cat:'all',q:'',city:'',prov:'',view:'explore',photos:new Map(),openThread:null};
+  listings:[],reviews:[],mineList:[],recv:[],sent:[],saved:new Set(),cat:'all',q:'',city:'',prov:'',brgy:'',view:'explore',photos:new Map(),openThread:null};
 let auth=null, db=null, fbApp=null, unsubs=[], threadUnsub=null, threadMsgs=[];
 
 const $ = s=>document.querySelector(s);
@@ -144,19 +180,24 @@ function updateBadges(){
 /* ---------- shell ---------- */
 function fillCities(){
   const sel=$('#city'); if(!sel) return;
-  if(!S.prov){ sel.hidden=true; sel.innerHTML=''; return; }
-  const fromListings=S.listings.filter(it=>provOf(it)===S.prov).map(it=>it.city).filter(Boolean);
-  const all=[...new Set([...areasOf(S.prov),...fromListings].map(x=>x.trim()))].sort((x,y)=>x.localeCompare(y));
+  if(!S.prov){ sel.hidden=true; sel.innerHTML=''; $('#brgy').hidden=true; $('#brgy').innerHTML=''; return; }
+  const official=areasOf(S.prov);
+  const extra=S.listings.filter(it=>provOf(it)===S.prov).map(it=>it.city).filter(c=>c&&!official.some(o=>sameArea(o,c)));
+  const all=[...official,...new Set(extra)].sort((x,y)=>x.localeCompare(y));
   sel.hidden=false;
-  sel.innerHTML=`<option value="">All of ${esc(S.prov)}</option>`+all.map(c=>`<option ${c===S.city?'selected':''}>${esc(c)}</option>`).join('');
+  sel.innerHTML=`<option value="">All of ${esc(S.prov)}</option>`+all.map(c=>`<option ${sameArea(c,S.city)?'selected':''}>${esc(c)}</option>`).join('');
+  const bs=$('#brgy'); const brgys=[...new Set(S.listings.filter(it=>provOf(it)===S.prov&&S.city&&sameArea(it.city,S.city)).map(it=>it.barangay).filter(Boolean))].sort();
+  bs.hidden=!brgys.length;
+  bs.innerHTML=brgys.length?`<option value="">All barangays</option>`+brgys.map(b=>`<option ${b===S.brgy?'selected':''}>${esc(b)}</option>`).join(''):'';
 }
 function buildShell(){
   const cats=$('#cats');
   cats.innerHTML=[['all','All'],...Object.entries(CATS).map(([k,v])=>[k,v.label])].map(([k,l])=>`<button type="button" data-cat="${k}" aria-pressed="${S.cat===k}">${ICON[k]}${l}</button>`).join('');
   cats.onclick=e=>{const b=e.target.closest('[data-cat]'); if(!b) return; S.cat=b.dataset.cat; cats.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b)); if(S.view!=='explore') location.hash='explore'; else render();};
   $('#prov').innerHTML=provOptions(S.prov,'All Philippines');
-  $('#prov').onchange=e=>{S.prov=e.target.value; S.city=''; fillCities(); if(S.view!=='explore') location.hash='explore'; else render();};
-  $('#city').onchange=e=>{S.city=e.target.value; if(S.view!=='explore') location.hash='explore'; else render();};
+  $('#prov').onchange=e=>{S.prov=e.target.value; S.city=''; S.brgy=''; fillCities(); if(S.view!=='explore') location.hash='explore'; else render();};
+  $('#city').onchange=e=>{S.city=e.target.value; S.brgy=''; fillCities(); if(S.view!=='explore') location.hash='explore'; else render();};
+  $('#brgy').onchange=e=>{S.brgy=e.target.value; if(S.view!=='explore') location.hash='explore'; else render();};
   fillCities();
   $('#q').oninput=e=>{S.q=e.target.value.trim().toLowerCase(); clearTimeout(buildShell.t); buildShell.t=setTimeout(()=>{ if(S.view!=='explore') location.hash='explore'; else render(); },150);};
   const labels={explore:'Explore',saved:'Saved',requests:'Inbox',mine:'My listings'};
@@ -206,8 +247,9 @@ function filtered(){
   return liveListings()
     .filter(it=>S.cat==='all'||it.cat===S.cat)
     .filter(it=>!S.prov||provOf(it)===S.prov)
-    .filter(it=>!S.city||(it.city||'').toLowerCase()===S.city.toLowerCase())
-    .filter(it=>!S.q||[it.title,it.desc,it.sub,it.providerName,it.city,provOf(it)].join(' ').toLowerCase().includes(S.q));
+    .filter(it=>!S.city||sameArea(it.city,S.city))
+    .filter(it=>!S.brgy||it.barangay===S.brgy)
+    .filter(it=>!S.q||[it.title,it.desc,it.sub,it.providerName,it.city,it.barangay,provOf(it)].join(' ').toLowerCase().includes(S.q));
 }
 function signInNote(what){ return `<div class="note"><strong>Sign in to ${what}.</strong> It’s free. Use your Google account or an email. <button class="linkbtn" data-signin>Sign in</button></div>`; }
 function render(){
@@ -229,7 +271,7 @@ function render(){
       const all=liveListings();
       let more=all.filter(it=>S.cat!=='all'&&it.cat===S.cat); let label=S.cat!=='all'?`${CATS[S.cat].label} in other areas`:'';
       if(!more.length&&S.city){ more=all.filter(it=>provOf(it)===S.prov); label=`Other listings in ${esc(S.prov)}`; }
-      if(!more.length&&areaLabel()){ more=all.filter(it=>(!S.prov||provOf(it)===S.prov)&&(!S.city||(it.city||'').toLowerCase()===S.city.toLowerCase())); label=`Other listings in ${esc(areaLabel())}`; }
+      if(!more.length&&areaLabel()){ more=all.filter(it=>(!S.prov||provOf(it)===S.prov)&&(!S.city||sameArea(it.city,S.city))); label=`Other listings in ${esc(S.city||S.prov)}`; }
       if(!more.length){ more=all; label='Other listings you might like'; }
       if(more.length) h+=`<div class="bar"><h2 style="font-size:20px">${label}</h2><span class="muted small num">${more.length}</span></div><div class="grid">${more.slice(0,12).map(cardHTML).join('')}</div>`;
     }
@@ -377,7 +419,7 @@ function openItem(id){
   const body=`${galleryHTML(it)}
     <div><div class="ctag" style="color:var(--c-${k})">${esc(CATS[k].one)} · ${esc(it.sub||'')}</div><h2 style="font-size:25px;margin-top:4px">${esc(it.title)}</h2></div>
     <div class="price num" style="font-size:24px;padding:0">${peso(it.price)} <span>/ ${esc(UNITS[it.unit]||it.unit)}</span></div>
-    <div class="facts"><div class="fact"><b>Area</b>${esc(it.city)}${provOf(it)&&provOf(it)!==it.city?', '+esc(provOf(it)):''}</div><div class="fact"><b>Provider</b>${esc(it.providerName||'Provider')}</div></div>
+    <div class="facts"><div class="fact"><b>Location</b>${esc(placeLine(it))}</div><div class="fact"><b>Provider</b>${esc(it.providerName||'Provider')}</div></div>
     ${it.desc?`<div class="desc">${esc(it.desc)}</div>`:''}
     ${it.example?'':reviewsHTML(it)}
     ${req?`<div class="sentbox"><div class="row"><strong>You already sent a request</strong><span class="pill s-${esc(req.status)}">${STATUS[req.status]}</span></div>
@@ -408,10 +450,12 @@ function openRequest(id){
   else fields=`<div class="two"><label>Quantity<input type="number" id="r-q" name="qty" min="1" value="1" required></label><label>Needed by<input type="date" id="r-d1" name="date1" min="${today}"></label></div>`;
   openSheet('Send a request',`<div class="small muted">To <strong style="color:var(--ink)">${esc(it.providerName)}</strong> for “${esc(it.title)}”</div>
     <form id="reqf">${fields}
+      ${(k==='services'||k==='products')?addrHTML('ra',lastAddr,{legend:k==='services'?'Where is the job?':'Delivery address',street:true,streetRequired:k==='services',brgyRequired:k==='services',hint:'Shared only with this provider.'}):''}
       <label>Message<textarea id="r-m" name="message" maxlength="800" placeholder="Hi! Is this available? Add details like your address or what you need."></textarea></label>
       <label>Your mobile number<span class="hint">Shared only with this provider so they can reach you.</span><input type="tel" id="r-c" name="contact" placeholder="09XX XXX XXXX" required maxlength="20"></label>
       <div class="err" id="r-err" hidden></div>
       <button class="btn accent" id="r-send">Send request</button></form>`,sh=>{
+    const getAddr=sh.querySelector('#ra-prov')?addrMount(sh,'ra',lastAddr):null;
     sh.querySelector('#reqf').onsubmit=async e=>{
       e.preventDefault(); const f=new FormData(e.target); const btn=sh.querySelector('#r-send'); const err=sh.querySelector('#r-err');
       const d1=f.get('date1')||'', d2=f.get('date2')||'';
@@ -423,6 +467,7 @@ function openRequest(id){
           fromId:S.user.uid,fromName:(S.user.displayName||'').slice(0,60),date1:d1,date2:d2,time:f.get('time')||'',qty:String(f.get('qty')||'').slice(0,40),
           message:msg,contact:String(f.get('contact')||'').slice(0,20),status:'pending',reply:'',createdAt:now,updatedAt:now,
           lastMsg:(msg||'Sent a request').slice(0,140),lastAt:now,lastFrom:S.user.uid,fromSeen:now,ownerSeen:0};
+        if(getAddr){ const ad=getAddr(); data.addr={province:ad.province,city:ad.city,barangay:ad.barangay,street:ad.street.slice(0,120)}; lastAddr=data.addr; try{ localStorage.setItem('renta-addr',JSON.stringify(lastAddr)); }catch(_){} }
         const ref=await addDoc(collection(db,'inquiries'),data);
         if(!S.sent.some(x=>x.id===ref.id)) S.sent=[{id:ref.id,...data},...S.sent];
         closeSheet(); toast('Request sent. The provider will reply in your Inbox.');
@@ -445,6 +490,7 @@ function threadInfoHTML(t){
                     : (t.providerPhone?`Provider’s number: <a class="num" href="${esc(telHref(t.providerPhone))}">${esc(t.providerPhone)}</a>`:'');
   return `<div class="row"><span class="role">${owner?'Customer request':'Your request'}</span><span class="pill s-${esc(t.status)}">${STATUS[t.status]||esc(t.status)}</span></div>
     <div class="small"><strong>${esc(owner?(t.fromName||'A customer'):(t.providerName||'Provider'))}</strong>${when?' · '+when:''}</div>
+    ${t.addr&&t.addr.city?`<div class="small">${owner?'Customer’s address':'Your address'}: ${esc([t.addr.street,t.addr.barangay&&('Brgy. '+t.addr.barangay),t.addr.city,t.addr.province].filter(Boolean).join(', '))}</div>`:''}
     ${num?`<div class="small">${num}</div>`:''}${acts?`<div class="row">${acts}</div>`:''}${threadReviewHTML(t)}`;
 }
 function reviewsHTML(it){
@@ -561,9 +607,7 @@ function openEditor(id){
     <label>Title<input type="text" id="e-t" name="title" required maxlength="80" value="${esc(it?.title||'')}" placeholder="e.g. Aircon cleaning, window or split type"></label>
     <div class="two"><label>Price (₱)<input type="number" id="e-p" name="price" required min="0" step="1" value="${esc(it?.price??'')}"></label>
     <label>Per<select id="e-u" name="unit">${Object.keys(UNITS).map(u=>`<option value="${u}" ${(it?.unit||CATS[cat].unit)===u?'selected':''}>${u}</option>`).join('')}</select></label></div>
-    <div class="two"><label>Province<select id="e-pr" name="province" required>${provOptions(it?provOf(it):(S.profile?.province||S.prov||'Cebu'),'Choose…')}</select></label>
-    <label>City or town<input type="text" id="e-c" name="city" list="citylist" required maxlength="40" value="${esc(it?.city||'')}" placeholder="e.g. Mandaue"></label></div>
-    <datalist id="citylist"></datalist>
+    ${addrHTML('loc',it?{province:provOf(it),city:it.city,barangay:it.barangay}:{province:S.prov||lastAddr.province||'',city:S.city||(S.prov?'':lastAddr.city)||''},{legend:'Location',brgyRequired:true,hint:'Customers see the barangay, city and province. Your exact address stays private.'})}
     <label>Details<span class="hint">Inclusions, schedule, requirements, location landmarks.</span><textarea id="e-d" name="desc" maxlength="1500">${esc(it?.desc||'')}</textarea></label>
     <fieldset><legend>Photos <span class="small muted" id="e-pc" style="font-family:var(--body);font-weight:500"></span></legend>
       <div class="small muted" style="margin-top:-6px">Add up to ${MAX_PHOTOS}. The first photo is the cover. They’re resized automatically.</div>
@@ -586,13 +630,13 @@ function openEditor(id){
     grid.addEventListener('click',e=>{ const b=e.target.closest('[data-rm]'); if(!b) return; e.preventDefault(); pics.splice(Number(b.dataset.rm),1); drawPics(); });
     drawPics();
     if(it&&oldCount){ Promise.all(Array.from({length:oldCount},(_,i)=>getPhoto(slotKey(it.id,i)).then(src=>({src,from:i})))).then(arr=>{ pics=[...arr.filter(p=>p.src),...pics.filter(p=>p.from<0)].slice(0,MAX_PHOTOS); drawPics(); }); }
-    const fillList=()=>{ sh.querySelector('#citylist').innerHTML=areasOf(sh.querySelector('#e-pr').value).map(c=>`<option value="${esc(c)}">`).join(''); };
-    fillList(); sh.querySelector('#e-pr').addEventListener('change',fillList);
+    const getLoc=addrMount(sh,'loc',it?{province:provOf(it),city:it.city,barangay:it.barangay}:{province:S.prov||lastAddr.province||'',city:S.city||(S.prov?'':lastAddr.city)||''});
     f.addEventListener('change',e=>{ if(e.target.name==='cat'){ const c=e.target.value; sh.querySelector('#e-sub').innerHTML=subOpts(c); sh.querySelector('#e-u').value=CATS[c].unit; } });
     f.onsubmit=async e=>{ e.preventDefault(); const d=new FormData(f); const b=sh.querySelector('#e-save'); b.disabled=true; b.textContent='Saving…';
+      const loc=getLoc(); if(!loc.province||!loc.city){ b.disabled=false; b.textContent=it?'Save changes':'Post listing'; toast('Choose the province and city or municipality.'); return; }
       const ref=it?doc(db,'listings',it.id):doc(collection(db,'listings'));
       const rec={ownerId:S.user.uid,providerName:S.profile.providerName,phone:S.profile.phone,cat:d.get('cat'),sub:d.get('sub'),title:String(d.get('title')).trim(),
-        price:Math.max(0,Number(d.get('price'))||0),unit:d.get('unit'),city:String(d.get('city')).trim(),province:String(d.get('province')||''),desc:String(d.get('desc')||'').trim(),
+        price:Math.max(0,Number(d.get('price'))||0),unit:d.get('unit'),city:loc.city.slice(0,40),province:loc.province,barangay:loc.barangay,desc:String(d.get('desc')||'').trim(),
         photoCount:pics.length,hasPhoto:pics.length>0,active:it?it.active!==false:true,createdAt:it?.createdAt||Date.now(),updatedAt:Date.now()};
       try{
         for(let i=0;i<pics.length;i++){ const key=slotKey(ref.id,i); if(pics[i].from===i) continue;
@@ -641,7 +685,7 @@ document.addEventListener('click',async e=>{
   else if(D.thread){ needUser(()=>openThread(D.thread)); }
   else if(D.rate){ openReview(D.rate); }
   else if(D.delacct!==undefined){ confirmDeleteAccount(); }
-  else if(D.clear){ if(D.clear==='city'){ S.city=''; S.prov=''; $('#prov').value=''; fillCities(); } if(D.clear==='cat'){ S.cat='all'; document.querySelectorAll('#cats button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.cat==='all')); } if(D.clear==='q'){ S.q=''; $('#q').value=''; } render(); }
+  else if(D.clear){ if(D.clear==='city'){ S.city=''; S.prov=''; S.brgy=''; $('#prov').value=''; fillCities(); } if(D.clear==='cat'){ S.cat='all'; document.querySelectorAll('#cats button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.cat==='all')); } if(D.clear==='q'){ S.q=''; $('#q').value=''; } render(); }
   else if(D.signin!==undefined) openSignIn();
   else if(D.notif!==undefined) enableNotifs();
   else if(D.req) needUser(()=>openRequest(D.req));
