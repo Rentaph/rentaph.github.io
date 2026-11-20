@@ -177,6 +177,28 @@ function updateBadges(){
   document.title=(n?`(${n}) `:'')+'Renta.ph';
 }
 
+/* ---------- maps (OpenStreetMap via Leaflet) ---------- */
+const PH_CENTER=[12.88,121.77];
+let leafletP=null;
+function loadLeaflet(){
+  if(window.L) return Promise.resolve(window.L);
+  if(leafletP) return leafletP;
+  leafletP=new Promise((res,rej)=>{
+    const css=document.createElement('link'); css.rel='stylesheet'; css.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'; document.head.appendChild(css);
+    const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'; s.onload=()=>res(window.L); s.onerror=()=>{ leafletP=null; rej(new Error('map')); }; document.head.appendChild(s);
+  });
+  return leafletP;
+}
+function baseMap(L,el,center,zoom,opts){
+  const m=L.map(el,Object.assign({zoomControl:true,attributionControl:true},opts||{})).setView(center,zoom);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(m);
+  setTimeout(()=>m.invalidateSize(),250);
+  return m;
+}
+const pinIcon=L=>L.divIcon({className:'pin-icon',html:'<span></span>',iconSize:[30,40],iconAnchor:[15,38]});
+const roundPin=(lat,lng)=>({lat:Math.round(lat*100)/100,lng:Math.round(lng*100)/100});
+const mapsLink=p=>`https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`;
+
 /* ---------- shell ---------- */
 function fillCities(){
   const sel=$('#city'); if(!sel) return;
@@ -421,6 +443,8 @@ function openItem(id){
     <div class="price num" style="font-size:24px;padding:0">${peso(it.price)} <span>/ ${esc(UNITS[it.unit]||it.unit)}</span></div>
     <div class="facts"><div class="fact"><b>Location</b>${esc(placeLine(it))}</div><div class="fact"><b>Provider</b>${esc(it.providerName||'Provider')}</div></div>
     ${it.desc?`<div class="desc">${esc(it.desc)}</div>`:''}
+    ${it.pin&&typeof it.pin.lat==='number'?`<div class="mapcard"><div class="pinmap small-map" id="d-map" aria-label="Map showing ${it.pinApprox?'the approximate area':'the location'} of this listing"></div>
+      <div class="row" style="justify-content:space-between"><span class="small muted">${it.pinApprox?'Approximate area. The provider shares the exact spot after you book.':'Pinned by the provider.'}</span><a class="btn sm" href="${mapsLink(it.pin)}" target="_blank" rel="noopener">Open in Google Maps</a></div></div>`:''}
     ${it.example?'':reviewsHTML(it)}
     ${req?`<div class="sentbox"><div class="row"><strong>You already sent a request</strong><span class="pill s-${esc(req.status)}">${STATUS[req.status]}</span></div>
       <div class="small muted">Sent ${ago(req.createdAt)}${req.date1?' · for '+fmtDate(req.date1):''}. ${req.status==='pending'?'The provider will reply in your Inbox.':'Message the provider to finalize.'}</div>
@@ -433,6 +457,12 @@ function openItem(id){
       ${S.isAdmin&&!mine?`<button class="btn danger" data-mod="${esc(id)}">Remove (admin)</button>`:''}
     </div>`}`;
   openSheet(esc(CATS[k].one),body,sh=>{
+    const dm=sh.querySelector('#d-map');
+    if(dm) loadLeaflet().then(L=>{ if(!dm.isConnected) return; const c=[it.pin.lat,it.pin.lng];
+      const m=baseMap(L,dm,c,it.pinApprox?14:16,{scrollWheelZoom:false});
+      if(it.pinApprox) L.circle(c,{radius:900,color:'#0e5a5f',weight:2,fillColor:'#0e5a5f',fillOpacity:.15}).addTo(m);
+      else L.marker(c,{icon:pinIcon(L)}).addTo(m);
+    }).catch(()=>{ dm.innerHTML='<div class="small muted" style="padding:14px">The map couldn’t load.</div>'; });
     const sl=sh.querySelector('#slides'); if(!sl) return;
     sl.addEventListener('scroll',()=>{ const i=Math.round(sl.scrollLeft/sl.clientWidth); const c=sh.querySelector('#gcount'); if(c) c.textContent=`${i+1} / ${sl.children.length}`;
       sh.querySelectorAll('.dots i').forEach((d,j)=>d.classList.toggle('on',j===i)); },{passive:true});
@@ -608,6 +638,13 @@ function openEditor(id){
     <div class="two"><label>Price (₱)<input type="number" id="e-p" name="price" required min="0" step="1" value="${esc(it?.price??'')}"></label>
     <label>Per<select id="e-u" name="unit">${Object.keys(UNITS).map(u=>`<option value="${u}" ${(it?.unit||CATS[cat].unit)===u?'selected':''}>${u}</option>`).join('')}</select></label></div>
     ${addrHTML('loc',it?{province:provOf(it),city:it.city,barangay:it.barangay}:{province:S.prov||lastAddr.province||'',city:S.city||(S.prov?'':lastAddr.city)||''},{legend:'Location',brgyRequired:true,hint:'Customers see the barangay, city and province. Your exact address stays private.'})}
+    <fieldset class="pinbox"><legend>Pin your location <span class="small muted" style="font-family:var(--body);font-weight:500">optional</span></legend>
+      <div class="small muted">Tap the map to drop a pin, or drag it. Customers see it on your listing with directions.</div>
+      <div class="pinmap" id="e-map" role="application" aria-label="Map. Tap to place your pin."><div class="small muted" style="padding:14px">Loading map…</div></div>
+      <div class="row"><button type="button" class="btn sm" id="e-gps">Use my current location</button><button type="button" class="btn sm danger" id="e-unpin" hidden>Remove pin</button></div>
+      <label class="check"><input type="checkbox" id="e-approx" ${it?.pinApprox?'checked':''}> Show only the approximate area (about 1 km), not my exact spot</label>
+      <div class="err" id="e-pinerr" hidden></div>
+    </fieldset>
     <label>Details<span class="hint">Inclusions, schedule, requirements, location landmarks.</span><textarea id="e-d" name="desc" maxlength="1500">${esc(it?.desc||'')}</textarea></label>
     <fieldset><legend>Photos <span class="small muted" id="e-pc" style="font-family:var(--body);font-weight:500"></span></legend>
       <div class="small muted" style="margin-top:-6px">Add up to ${MAX_PHOTOS}. The first photo is the cover. They’re resized automatically.</div>
@@ -630,6 +667,28 @@ function openEditor(id){
     grid.addEventListener('click',e=>{ const b=e.target.closest('[data-rm]'); if(!b) return; e.preventDefault(); pics.splice(Number(b.dataset.rm),1); drawPics(); });
     drawPics();
     if(it&&oldCount){ Promise.all(Array.from({length:oldCount},(_,i)=>getPhoto(slotKey(it.id,i)).then(src=>({src,from:i})))).then(arr=>{ pics=[...arr.filter(p=>p.src),...pics.filter(p=>p.from<0)].slice(0,MAX_PHOTOS); drawPics(); }); }
+    let pin=it&&it.pin&&typeof it.pin.lat==='number'?{lat:it.pin.lat,lng:it.pin.lng}:null, pmap=null, marker=null;
+    const unpinBtn=sh.querySelector('#e-unpin'), pinErr=sh.querySelector('#e-pinerr');
+    const setPin=(lat,lng,pan)=>{ pin={lat,lng}; unpinBtn.hidden=false; if(!pmap) return;
+      if(!marker){ marker=window.L.marker([lat,lng],{draggable:true,icon:pinIcon(window.L)}).addTo(pmap); marker.on('dragend',()=>{ const p=marker.getLatLng(); pin={lat:p.lat,lng:p.lng}; }); }
+      else marker.setLatLng([lat,lng]);
+      if(pan) pmap.setView([lat,lng],Math.max(pmap.getZoom(),16)); };
+    const cityCenter=()=>{ const p=sh.querySelector('#loc-prov')?.value, c=sh.querySelector('#loc-city')?.value; return (p&&c&&window.phCityPoint)?phCityPoint(p,c):null; };
+    loadLeaflet().then(L=>{ if(!sh.isConnected) return; const el=sh.querySelector('#e-map'); el.innerHTML='';
+      const cc=cityCenter(); pmap=baseMap(L,el,pin?[pin.lat,pin.lng]:(cc||PH_CENTER),pin?16:(cc?14:5));
+      pmap.on('click',e=>setPin(e.latlng.lat,e.latlng.lng,false));
+      if(pin) setPin(pin.lat,pin.lng,false);
+    }).catch(()=>{ sh.querySelector('#e-map').innerHTML='<div class="small muted" style="padding:14px">The map couldn’t load. Check your connection; you can still post without a pin.</div>'; });
+    sh.querySelector('#loc-city')?.addEventListener('change',()=>{ const cc=cityCenter(); if(pmap&&cc&&!pin) pmap.setView(cc,14); });
+    unpinBtn.onclick=()=>{ pin=null; unpinBtn.hidden=true; if(marker){ marker.remove(); marker=null; } };
+    if(pin) unpinBtn.hidden=false;
+    sh.querySelector('#e-gps').onclick=()=>{
+      pinErr.hidden=true;
+      if(!navigator.geolocation){ pinErr.hidden=false; pinErr.textContent='This phone or browser can’t share its location. Tap the map instead.'; return; }
+      navigator.geolocation.getCurrentPosition(p=>setPin(p.coords.latitude,p.coords.longitude,true),
+        ()=>{ pinErr.hidden=false; pinErr.textContent='Location is blocked. Allow location for this site in your browser settings, or tap the map instead.'; },
+        {enableHighAccuracy:true,timeout:12000});
+    };
     const getLoc=addrMount(sh,'loc',it?{province:provOf(it),city:it.city,barangay:it.barangay}:{province:S.prov||lastAddr.province||'',city:S.city||(S.prov?'':lastAddr.city)||''});
     f.addEventListener('change',e=>{ if(e.target.name==='cat'){ const c=e.target.value; sh.querySelector('#e-sub').innerHTML=subOpts(c); sh.querySelector('#e-u').value=CATS[c].unit; } });
     f.onsubmit=async e=>{ e.preventDefault(); const d=new FormData(f); const b=sh.querySelector('#e-save'); b.disabled=true; b.textContent='Saving…';
@@ -637,6 +696,8 @@ function openEditor(id){
       const ref=it?doc(db,'listings',it.id):doc(collection(db,'listings'));
       const rec={ownerId:S.user.uid,providerName:S.profile.providerName,phone:S.profile.phone,cat:d.get('cat'),sub:d.get('sub'),title:String(d.get('title')).trim(),
         price:Math.max(0,Number(d.get('price'))||0),unit:d.get('unit'),city:loc.city.slice(0,40),province:loc.province,barangay:loc.barangay,desc:String(d.get('desc')||'').trim(),
+        pin:pin?(sh.querySelector('#e-approx').checked?roundPin(pin.lat,pin.lng):{lat:Math.round(pin.lat*1e5)/1e5,lng:Math.round(pin.lng*1e5)/1e5}):null,
+        pinApprox:!!(pin&&sh.querySelector('#e-approx').checked),
         photoCount:pics.length,hasPhoto:pics.length>0,active:it?it.active!==false:true,createdAt:it?.createdAt||Date.now(),updatedAt:Date.now()};
       try{
         for(let i=0;i<pics.length;i++){ const key=slotKey(ref.id,i); if(pics[i].from===i) continue;

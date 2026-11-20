@@ -236,3 +236,13 @@ textarea{min-height:90px;resize:vertical}
 .addr{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px 14px}
 .addr legend{padding:0 4px}
 .addr select:disabled{opacity:.6}
+
+/* map pin */
+.pinbox{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px 14px}
+.pinmap{height:240px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#e8ece4;position:relative;z-index:0}
+.small-map{height:190px}
+.mapcard{display:flex;flex-direction:column;gap:8px}
+.check{flex-direction:row;align-items:flex-start;gap:8px;font-weight:500}
+.check input{margin-top:3px;width:18px;height:18px;flex:none}
+.pin-icon span{display:block;width:30px;height:30px;border-radius:50% 50% 50% 0;background:#b9452c;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.35)}
+.pin-icon span::after{content:"";position:absolute;width:10px;height:10px;border-radius:50%;background:#fff;left:7px;top:7px}
