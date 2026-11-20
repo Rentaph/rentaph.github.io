@@ -16,4 +16,4 @@ self.RENTA_SUPPORT_EMAIL = "telltheworldlyf@gmail.com";
 self.RENTA_VAPID = "";
 
 // Donation details shown on about.html. Leave blank to hide a method.
-self.RENTA_DONATE = { name: "Jessie Cajandab", gcash: "", maya: "", link: "", qr: "" };
+self.RENTA_DONATE = { name: "Jessie Cajandab", gcash: "0995 668 2914", maya: "0995 668 2914", link: "", qr: "" };
