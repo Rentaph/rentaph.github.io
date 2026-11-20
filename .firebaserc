@@ -1,0 +1,4 @@
+{
+  "projects": { "default": "renta-ph-856ae" },
+  "targets": { "renta-ph-856ae": { "hosting": { "main": ["rentaph"] } } }
+}
