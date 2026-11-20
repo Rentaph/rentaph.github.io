@@ -144,8 +144,12 @@ function buildShell(){
   $('#acct').onclick=()=>S.user?openAccount():openSignIn();
   if(window.RentaScene) RentaScene($('#appscene'),{mode:'banner'});
 }
+let pendingOpen=null;
 function route(){
-  const h=location.hash.slice(1); S.view=['explore','saved','requests','mine'].includes(h)?h:'explore';
+  let h=location.hash.slice(1);
+  if(h.startsWith('l-')){ pendingOpen=h.slice(2); history.replaceState(null,'','#explore'); h='explore'; }
+  if(h.startsWith('explore-')){ const c=h.slice(8); if(CATS[c]){ S.cat=c; document.querySelectorAll('#cats button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.cat===c)); } history.replaceState(null,'','#explore'); h='explore'; }
+  S.view=['explore','saved','requests','mine'].includes(h)?h:'explore';
   const v=$('#view'); v.classList.add('anim'); clearTimeout(route.t); route.t=setTimeout(()=>v.classList.remove('anim'),1200);
   render(); $('main').scrollTop=0;
 }
@@ -195,7 +199,17 @@ function render(){
     const list=filtered(); const catL=S.cat==='all'?'listings':CATS[S.cat].label.toLowerCase();
     if(S.ready&&!S.listings.some(x=>x.active!==false)) h+=`<div class="note"><strong>Renta.ph is brand new.</strong> These are examples of what listings look like. Post the first real one under My listings.</div>`;
     h+=`<div class="bar"><h2>${S.q?'Results':(S.cat==='all'?'Near you':CATS[S.cat].label)}</h2><span class="muted small num">${list.length} ${catL}${S.city?' in '+esc(S.city):''}</span></div>`;
-    h+= list.length?`<div class="grid">${list.map(cardHTML).join('')}</div>`:(S.ready?`<div class="empty">${ICON.explore}<div>No listings match yet.</div><div class="small">Try another area or category, or be the first to post one.</div><a class="btn primary" href="#mine">Post a listing</a></div>`:'');
+    if(list.length) h+=`<div class="grid">${list.map(cardHTML).join('')}</div>`;
+    else if(S.ready){
+      const what=[S.cat!=='all'?CATS[S.cat].label.toLowerCase():'listings',S.city?'in '+esc(S.city):'',S.q?`for “${esc(S.q)}”`:''].filter(Boolean).join(' ');
+      h+=`<div class="empty">${ICON.explore}<div><strong style="color:var(--ink)">No ${what} yet.</strong></div><div class="small">Be the first to post one, or widen your search.</div>
+        <div class="row" style="justify-content:center">${S.city?'<button class="btn sm" data-clear="city">Show all areas</button>':''}${S.cat!=='all'?'<button class="btn sm" data-clear="cat">Show all categories</button>':''}${S.q?'<button class="btn sm" data-clear="q">Clear search</button>':''}<a class="btn sm primary" href="#mine">Post a listing</a></div></div>`;
+      const all=liveListings();
+      let more=all.filter(it=>S.cat!=='all'&&it.cat===S.cat); let label=S.cat!=='all'?`${CATS[S.cat].label} in other areas`:'';
+      if(!more.length){ more=all.filter(it=>!S.city||(it.city||'').toLowerCase()===S.city.toLowerCase()); label=S.city?`Other listings in ${esc(S.city)}`:''; }
+      if(!more.length){ more=all; label='Other listings you might like'; }
+      if(more.length) h+=`<div class="bar"><h2 style="font-size:20px">${label}</h2><span class="muted small num">${more.length}</span></div><div class="grid">${more.slice(0,12).map(cardHTML).join('')}</div>`;
+    }
   } else if(S.view==='saved'){
     h+=`<div class="bar"><h2>Saved</h2>${S.user?`<span class="muted small num">${S.saved.size} saved</span>`:''}</div>`;
     if(!S.user) h+=signInNote('save listings');
@@ -548,6 +562,7 @@ document.addEventListener('click',async e=>{
   const D=t.dataset;
   if(D.open) openItem(D.open);
   else if(D.thread){ needUser(()=>openThread(D.thread)); }
+  else if(D.clear){ if(D.clear==='city'){ S.city=''; $('#city').value=''; } if(D.clear==='cat'){ S.cat='all'; document.querySelectorAll('#cats button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.cat==='all')); } if(D.clear==='q'){ S.q=''; $('#q').value=''; } render(); }
   else if(D.signin!==undefined) openSignIn();
   else if(D.notif!==undefined) enableNotifs();
   else if(D.req) needUser(()=>openRequest(D.req));
@@ -596,6 +611,7 @@ function start(){
     clearTimeout(timer); S.error=''; S.ready=true;
     S.listings=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.title).map(x=>({...x,cat:catOf(x.cat)}));
     if(S.view==='explore'||S.view==='saved') render();
+    if(pendingOpen){ const id=pendingOpen; pendingOpen=null; setTimeout(()=>{ if(findItem(id)) openItem(id); },700); }
   },e=>{ clearTimeout(timer); S.ready=true; S.error='Listings couldn’t load. '+(e.code==='permission-denied'?'The database rules haven’t been published yet.':'Try reloading the page.'); render(); });
 }
 start();

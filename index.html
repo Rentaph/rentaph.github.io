@@ -127,6 +127,33 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
 @keyframes float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-12px) rotate(-2deg)}}
 @keyframes slidein{0%{transform:translateX(0);opacity:1}90%{transform:translateX(0);opacity:1}95%{transform:translateX(16px);opacity:.4}100%{transform:translateX(0);opacity:1}}
 
+
+/* explore on landing */
+.ex-tools{display:flex;flex-direction:column;gap:12px;margin-bottom:18px}
+.ex-tools input{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 16px;font:inherit;max-width:520px}
+.ex-chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.ex-chips button{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 15px;font:700 14px var(--body);color:var(--ink);cursor:pointer;transition:transform .15s}
+.ex-chips button:hover{transform:translateY(-1px)}
+.ex-chips button[aria-pressed="true"]{background:var(--brand);color:#fff;border-color:var(--brand)}
+.ex-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media (max-width:980px){.ex-grid{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:720px){.ex-grid{grid-template-columns:1fr 1fr;gap:10px}}
+.lcard{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:22px;overflow:hidden;text-decoration:none;color:var(--ink);display:flex;flex-direction:column;transition:transform .2s,box-shadow .2s;animation:rise .45s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*50ms)}
+.lcard:hover{transform:translateY(-4px);box-shadow:0 18px 34px -22px rgba(21,32,48,.35)}
+.lthumb{aspect-ratio:4/3;display:grid;place-items:center;position:relative;overflow:hidden}
+.lthumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.lthumb svg{width:38%;height:38%}
+.lbody{padding:12px 14px 14px;display:flex;flex-direction:column;gap:3px;flex:1}
+.ltag{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+.lbody h3{font:700 17px/1.25 var(--body);letter-spacing:0}
+.lprov{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lprice{margin-top:auto;padding-top:4px;font:800 17px var(--display);font-variant-numeric:tabular-nums}
+.lprice span{font:500 13px var(--body);color:var(--muted)}
+.lbadge{position:absolute;top:10px;left:10px;z-index:1;background:#fff;border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px}
+.ex-note{grid-column:1/-1;background:var(--surface);border:1px dashed var(--line);border-radius:16px;padding:16px;color:var(--muted)}
+.ex-more{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px}
+.k-services{background:#d9ecea;color:#0e5a5f}.k-cars{background:#f5dfd8;color:#b9452c}.k-apartments{background:#dde4f4;color:#3b5699}.k-products{background:#f3e7cc;color:#86600f}
+@keyframes rise{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <link rel="stylesheet" href="scene.css">
@@ -137,7 +164,7 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
   <nav class="nav" aria-label="Main">
     <a class="logo" href="./" aria-label="Renta.ph home">renta<i></i><span>ph</span></a>
     <div class="nav-links">
-      <a class="hide-sm" href="#categories">Browse</a>
+      <a class="hide-sm" href="#explore">Explore</a>
       <a class="hide-sm" href="#how">How it works</a>
       <a class="hide-sm" href="#providers">For providers</a>
       <a class="btn primary sm" href="app.html#explore">Open the app</a>
@@ -161,6 +188,21 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
     <div class="scene-wrap" id="scene" role="img" aria-label="An animated Cebu street: an apartment block with a For Rent sign, a sari-sari store, a plumber fixing a pipe outside a house, a cleaner mopping, a car and motorcycle rental lot where the owner hands over keys, rented motorbikes and a rented car driving off, a jeep and a delivery scooter passing, and neighbors walking by while booking on their phones."></div>
   </header>
 </div>
+
+<section id="explore">
+  <div class="container">
+    <div class="sec-head">
+      <h2>Explore what’s near you.</h2>
+      <p>Real listings from people in Cebu. Tap one to see photos, prices and how to book.</p>
+    </div>
+    <div class="ex-tools">
+      <input id="ex-q" type="search" placeholder="Search plumber, Vios, studio…" aria-label="Search listings">
+      <div class="ex-chips" id="ex-chips" role="group" aria-label="Category"></div>
+    </div>
+    <div class="ex-grid" id="ex-grid" aria-live="polite"><div class="ex-note">Loading listings…</div></div>
+    <div class="ex-more"><a class="btn primary" id="ex-all" href="app.html#explore">See all listings</a><a class="btn ghost" href="app.html#mine">Post yours, free</a></div>
+  </div>
+</section>
 
 <section id="categories">
   <div class="container">
@@ -258,5 +300,7 @@ RentaScene(document.getElementById('scene'),{mode:'hero'});
   },90);
 })();
 </script>
+<script src="config.js"></script>
+<script type="module" src="landing-explore.js"></script>
 </body>
 </html>
