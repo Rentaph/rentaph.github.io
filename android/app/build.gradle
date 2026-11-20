@@ -1,5 +1,6 @@
 plugins { id 'com.android.application' }
 
+def ksPass = (System.getenv("KEYSTORE_PASSWORD") ?: "").trim()
 def appVersionCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
 
 android {
@@ -15,9 +16,9 @@ android {
     signingConfigs {
         release {
             storeFile file("release.jks")
-            storePassword System.getenv("KEYSTORE_PASSWORD")
+            storePassword ksPass
             keyAlias "renta"
-            keyPassword System.getenv("KEYSTORE_PASSWORD")
+            keyPassword ksPass
         }
     }
     buildTypes {
