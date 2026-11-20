@@ -29,16 +29,17 @@
   </div>
   <div class="search">
     <input id="q" type="text" placeholder="Search aircon cleaning, Vios, studio…" aria-label="Search listings">
-    <select id="city" aria-label="City"><option value="">All areas</option></select>
+    <select id="prov" aria-label="Province"></select>
+    <select id="city" aria-label="City or town" hidden></select>
   </div>
   <div class="cats" id="cats" role="group" aria-label="Category"></div>
 </header>
 
 <main>
   <section class="welcome" id="welcome">
-    <span class="kicker"><b></b>Now open in Cebu</span>
+    <span class="kicker"><b></b>Now open across the Philippines</span>
     <h1><span id="hi">Hi!</span> What do you <em>need</em> today?</h1>
-    <div class="scene-wrap" id="appscene" role="img" aria-label="Animated Cebu street with local stores, rentals and service providers"></div>
+    <div class="scene-wrap" id="appscene" role="img" aria-label="Animated neighborhood street with local stores, rentals and service providers"></div>
   </section>
   <div class="wrap" id="view"><div class="note">Loading Renta.ph…</div></div>
 </main>
@@ -55,6 +56,7 @@
 
 <noscript><div class="note">Renta.ph needs JavaScript turned on.</div></noscript>
 <script src="config.js"></script>
+<script src="places.js"></script>
 <script type="module" src="app.js"></script>
 </body>
 </html>

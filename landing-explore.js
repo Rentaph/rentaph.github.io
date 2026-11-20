@@ -22,11 +22,15 @@ const peso = n=>'₱'+Number(n||0).toLocaleString('en-PH',{maximumFractionDigits
 const safeImg = u=>/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(u||'')?u:'';
 const catOf = c=>ICON[c]?c:'services';
 const grid=document.getElementById('ex-grid'), chips=document.getElementById('ex-chips'), q=document.getElementById('ex-q'), allBtn=document.getElementById('ex-all');
-let items=[], cat='all', db=null, isExamples=false, rating={}; const photos=new Map();
+let items=[], prov='', cat='all', db=null, isExamples=false, rating={}; const photos=new Map();
 
 chips.innerHTML=Object.entries(CATS).map(([k,l])=>`<button type="button" data-c="${k}" aria-pressed="${k==='all'}">${l}</button>`).join('');
 chips.onclick=e=>{ const b=e.target.closest('[data-c]'); if(!b) return; cat=b.dataset.c; chips.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b)); allBtn.href='app.html#'+(cat==='all'?'explore':'explore-'+cat); draw(); };
 q.oninput=()=>draw();
+const provSel=document.getElementById('ex-prov');
+const provOf=it=>it.province||(self.phProvinceOf?self.phProvinceOf(it.city):'')||'';
+if(provSel){ provSel.innerHTML='<option value="">All Philippines</option>'+(self.PH_PLACES||[]).map(r=>`<optgroup label="${esc(r.region)}">${r.provinces.map(p=>`<option>${esc(p.name)}</option>`).join('')}</optgroup>`).join('');
+  provSel.onchange=()=>{ prov=provSel.value; draw(); }; }
 
 function card(it,i){
   const k=catOf(it.cat); const src=photos.get(it.id);
@@ -34,14 +38,14 @@ function card(it,i){
   return `<a class="lcard" style="--i:${i}" href="${href}">${it.example?'<span class="lbadge">Example</span>':''}
     <div class="lthumb k-${k}" data-pid="${esc(it.id)}">${ICON[k]}${src?`<img alt="" src="${src}">`:''}</div>
     <div class="lbody"><div class="ltag" style="color:${COLOR[k]}">${esc(it.sub||CATS[k])}</div><h3>${esc(it.title)}</h3>
-    <div class="lprov">${esc(it.providerName||'Provider')} · ${esc(it.city||'')}</div>
+    <div class="lprov">${esc(it.providerName||'Provider')} · ${esc(it.city||'')}${provOf(it)&&provOf(it)!==it.city?', '+esc(provOf(it)):''}</div>
     ${rating[it.ownerId]?`<div class="lrate">★ <b>${rating[it.ownerId].avg.toFixed(1)}</b> <span>(${rating[it.ownerId].n})</span></div>`:''}
     <div class="lprice">${peso(it.price)} <span>/ ${esc(it.unit||'')}</span></div></div></a>`;
 }
 function draw(){
   const term=q.value.trim().toLowerCase();
-  const list=items.filter(it=>cat==='all'||it.cat===cat).filter(it=>!term||[it.title,it.sub,it.city,it.providerName,it.desc].join(' ').toLowerCase().includes(term));
-  if(!list.length){ grid.innerHTML=`<div class="ex-note">Nothing here yet${cat!=='all'?' in '+esc(CATS[cat]):''}. <a href="app.html#mine">Be the first to post one</a>.</div>`; return; }
+  const list=items.filter(it=>!prov||provOf(it)===prov).filter(it=>cat==='all'||it.cat===cat).filter(it=>!term||[it.title,it.sub,it.city,it.providerName,it.desc].join(' ').toLowerCase().includes(term));
+  if(!list.length){ grid.innerHTML=`<div class="ex-note">Nothing here yet${cat!=='all'?' in '+esc(CATS[cat]):''}${prov?' in '+esc(prov):''}. <a href="app.html#mine">Be the first to post one</a>.</div>`; return; }
   grid.innerHTML=(isExamples?'<div class="ex-note">Renta.ph is brand new. These are examples of what listings look like.</div>':'')+list.slice(0,8).map(card).join('');
   if(db) grid.querySelectorAll('[data-pid]').forEach(el=>{ const id=el.dataset.pid; const it=items.find(x=>x.id===id); if(!id||!it||!(it.photoCount||it.hasPhoto)||photos.has(id)) return;
     getDoc(doc(db,'photos',id)).then(d=>{ const s=d.exists()?safeImg(d.data().data):''; if(!s) return; photos.set(id,s);
