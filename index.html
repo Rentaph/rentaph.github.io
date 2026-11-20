@@ -128,6 +128,12 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
 .sign{transform-box:fill-box;transform-origin:50% 0;animation:swing 3.2s ease-in-out infinite}
 .car{animation:drive 11s linear infinite}
 .scooter{animation:drive-back 14s linear infinite;animation-delay:-5s}
+.c-rent{animation-delay:-5.5s}
+.moto{animation:drive 8s linear infinite;animation-delay:-2s}
+.moto.m2{animation-duration:9.5s;animation-delay:-7s}
+.rock{animation:rock 2.4s ease-in-out infinite}
+.keys{transform-box:fill-box;transform-origin:0 100%;animation:keys 1.6s ease-in-out infinite}
+.lamp{animation:blink 1.4s step-end infinite}
 .wheel{transform-box:fill-box;transform-origin:center;animation:spin .6s linear infinite}
 .lane{animation:lane 1.2s linear infinite}
 .walker{animation:walk 26s linear infinite}
@@ -167,6 +173,8 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
 @keyframes ping{0%{box-shadow:0 0 0 0 rgba(14,90,95,.5)}100%{box-shadow:0 0 0 10px rgba(14,90,95,0)}}
 @keyframes underline{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @keyframes blink{50%{opacity:0}}
+@keyframes rock{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.5px)}}
+@keyframes keys{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(14deg)}}
 @keyframes float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-12px) rotate(-2deg)}}
 @keyframes slidein{0%{transform:translateX(0);opacity:1}90%{transform:translateX(0);opacity:1}95%{transform:translateX(16px);opacity:.4}100%{transform:translateX(0);opacity:1}}
 
@@ -199,7 +207,7 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
         <div><strong>₱0</strong>to browse or post</div>
       </div>
     </div>
-    <div class="scene-wrap" id="scene" role="img" aria-label="An animated Cebu street: an apartment block with a For Rent sign, a sari-sari store, a plumber fixing a pipe outside a house, a cleaner mopping, a car rental lot, a jeep and a delivery scooter passing, and neighbors walking by while booking on their phones."></div>
+    <div class="scene-wrap" id="scene" role="img" aria-label="An animated Cebu street: an apartment block with a For Rent sign, a sari-sari store, a plumber fixing a pipe outside a house, a cleaner mopping, a car and motorcycle rental lot where the owner hands over keys, rented motorbikes and a rented car driving off, a jeep and a delivery scooter passing, and neighbors walking by while booking on their phones."></div>
   </header>
 </div>
 
@@ -303,6 +311,20 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
     <text x="${-w/2+40}" y="-32" font-family="Figtree,sans-serif" font-size="17" font-weight="700" fill="#152030">${label}</text>
     <text x="${-w/2+40}" y="-12" font-family="Figtree,sans-serif" font-size="15" fill="#56606e">${price}</text></g></g>`;
 
+  const motor=(x,y,color,o={})=>`<g transform="translate(${x} ${y})${o.flip?' scale(-1 1)':''}">
+    <g class="${o.ride?'wheel':''}"><circle cx="0" cy="0" r="11" fill="#1d232b"/><circle cx="0" cy="0" r="4" fill="#8a96a3"/>${o.ride?'<rect x="-1.5" y="-10" width="3" height="20" fill="#8a96a3"/>':''}</g>
+    <g class="${o.ride?'wheel':''}"><circle cx="48" cy="0" r="11" fill="#1d232b"/><circle cx="48" cy="0" r="4" fill="#8a96a3"/>${o.ride?'<rect x="46.5" y="-10" width="3" height="20" fill="#8a96a3"/>':''}</g>
+    <path d="M2 -4 L14 -18 H34 L46 -4 Z" fill="${color}"/><rect x="12" y="-26" width="22" height="8" rx="4" fill="#26323f"/>
+    <path d="M40 -14 L48 -32" stroke="#26323f" stroke-width="4" stroke-linecap="round"/><rect x="42" y="-36" width="14" height="4" rx="2" fill="#26323f"/>
+    <circle class="${o.ride?'':'lamp'}" cx="52" cy="-22" r="4" fill="#f6d77a"/>
+    ${o.tag?`<rect x="6" y="-12" width="22" height="8" rx="2" fill="#fff"/><text x="17" y="-6" text-anchor="middle" font-family="Figtree,sans-serif" font-size="6.5" font-weight="800" fill="#152030">${o.tag}</text>`:''}
+    ${o.rider||''}</g>`;
+  const car=(x,y,color,o={})=>`<g transform="translate(${x} ${y})"><rect x="0" y="0" width="86" height="24" rx="8" fill="${color}"/><path d="M14 0 l12-16 h36 l12 16z" fill="${color}"/><path d="M22 -2 l8-11 h12 v11z M48 -2 v-11 h10 l8 11z" fill="#d9ecf5"/>
+    ${o.roof?`<rect x="28" y="-27" width="32" height="11" rx="3" fill="#e9a514"/><text x="44" y="-18.5" text-anchor="middle" font-family="Figtree,sans-serif" font-size="7.5" font-weight="800" fill="#231600">${o.roof}</text>`:''}
+    <circle cx="82" cy="10" r="3.5" fill="#f6d77a"/>
+    <g class="${o.ride?'wheel':''}"><circle cx="20" cy="26" r="9" fill="#26323f"/>${o.ride?'<rect x="18.5" y="18" width="3" height="16" fill="#8a96a3"/>':''}</g>
+    <g class="${o.ride?'wheel':''}"><circle cx="68" cy="26" r="9" fill="#26323f"/>${o.ride?'<rect x="66.5" y="18" width="3" height="16" fill="#8a96a3"/>':''}</g></g>`;
+
   let w=''; // apartment windows
   for(let r=0;r<6;r++) for(let c=0;c<4;c++){ const lit=(r*4+c)%3===0; w+=`<rect class="${lit?'win':''}" style="animation-delay:${-(r*1.3+c*.7)}s" x="${102+c*42}" y="${180+r*38}" width="26" height="24" rx="3" fill="${lit?'#f6d77a':'#c9d6e3'}"/>`; }
   let w2='';
@@ -353,12 +375,14 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
   ${person(880,398,{skin:SK[3],shirt:'#b9452c',pants:'#26323f',hair:'#3a2416',extra:'<g class="mop"><rect x="8" y="-6" width="4" height="46" rx="2" fill="#8a6a3f"/><rect x="2" y="38" width="18" height="7" rx="3" fill="#9fc5e0"/></g>'})}
   <path d="M860 438 q20 6 44 0" stroke="#9fc5e0" stroke-width="4" fill="none" opacity=".7" stroke-linecap="round"/>
 
-  <!-- car rental lot -->
-  <rect x="940" y="330" width="230" height="92" fill="#fbf6ea"/><rect x="934" y="318" width="242" height="18" rx="4" fill="#0e5a5f"/>
-  <text x="1055" y="331" text-anchor="middle" font-family="Bricolage Grotesque,sans-serif" font-size="13" font-weight="800" fill="#fff">CAR RENTAL</text>
-  <g transform="translate(962 384)"><rect x="0" y="0" width="86" height="24" rx="8" fill="#b9452c"/><path d="M14 0 l12-16 h36 l12 16z" fill="#b9452c"/><path d="M22 -2 l8-11 h12 v11z M48 -2 v-11 h10 l8 11z" fill="#d9ecf5"/><circle cx="20" cy="26" r="9" fill="#26323f"/><circle cx="68" cy="26" r="9" fill="#26323f"/></g>
-  <g transform="translate(1068 384)"><rect x="0" y="0" width="86" height="24" rx="8" fill="#3b5699"/><path d="M14 0 l12-16 h36 l12 16z" fill="#3b5699"/><path d="M22 -2 l8-11 h12 v11z M48 -2 v-11 h10 l8 11z" fill="#d9ecf5"/><circle cx="20" cy="26" r="9" fill="#26323f"/><circle cx="68" cy="26" r="9" fill="#26323f"/></g>
-
+  <!-- car & motor rental lot -->
+  <rect x="936" y="330" width="244" height="92" fill="#fbf6ea"/><rect x="928" y="316" width="258" height="20" rx="4" fill="#0e5a5f"/>
+  <text x="1057" y="330.5" text-anchor="middle" font-family="Bricolage Grotesque,sans-serif" font-size="12.5" font-weight="800" fill="#fff">CAR &amp; MOTOR RENTAL</text>
+  <rect x="946" y="342" width="70" height="30" rx="4" fill="#dcefeb"/><text x="981" y="355" text-anchor="middle" font-family="Figtree,sans-serif" font-size="8.5" font-weight="800" fill="#0e5a5f">MOTOR ₱500</text><text x="981" y="366" text-anchor="middle" font-family="Figtree,sans-serif" font-size="8.5" font-weight="800" fill="#0e5a5f">CAR ₱1,800</text>
+  <g class="rock">${car(1026,384,'#b9452c')}</g>
+  ${motor(1124,410,'#3b5699',{tag:'RENT'})}
+  ${person(954,396,{skin:SK[1],shirt:'#0e5a5f',pants:'#26323f',hair:'#1d1a17',extra:'<g class="keys"><rect x="10" y="-8" width="6" height="16" rx="3" fill="#0e5a5f"/><circle cx="18" cy="-12" r="5" fill="none" stroke="#e9a514" stroke-width="2.5"/><rect x="21" y="-13" width="9" height="2.5" fill="#e9a514"/></g>'})}
+  ${person(1002,400,{skin:SK[0],shirt:'#e9a514',pants:'#3b5699',scale:.9,hair:'#3a2416',extra:'<g class="wave"><rect x="-16" y="-10" width="6" height="16" rx="3" fill="#e9a514"/></g>'})}
   <!-- road -->
   <rect x="0" y="446" width="1200" height="74" fill="#3c4652"/>
   <g class="lane">${lanes}</g>
@@ -374,6 +398,11 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
     <g class="wheel"><circle cx="124" cy="42" r="10" fill="#1d232b"/><rect x="122" y="34" width="4" height="16" fill="#8a96a3"/></g>
     <circle class="smoke" cx="-6" cy="34" r="6" fill="#c5cbbd"/>
   </g></g>
+  <!-- rented car following the jeep -->
+  <g class="car c-rent"><g transform="translate(0 0)">${car(0,454,'#3b5699',{ride:true,roof:'RENTED'})}</g></g>
+  <!-- rented motorcycles -->
+  <g class="moto">${motor(0,508,'#b9452c',{ride:true,tag:'RENT',rider:person(24,-46,{skin:SK[2],shirt:'#0e5a5f',pants:'#26323f',scale:.6,cap:'#e9a514'})})}</g>
+  <g class="moto m2">${motor(0,508,'#3b5699',{ride:true,tag:'RENT',rider:person(24,-46,{skin:SK[3],shirt:'#b9452c',pants:'#26323f',scale:.6,cap:'#152030'})+person(6,-42,{skin:SK[0],shirt:'#e9a514',pants:'#3b5699',scale:.52,hair:'#3a2416'})})}</g>
   <!-- delivery scooter -->
   <g class="scooter"><g transform="translate(0 490) scale(-1 1)">
     <rect x="-40" y="-8" width="44" height="14" rx="6" fill="#0e5a5f"/><rect x="-34" y="-30" width="22" height="20" rx="3" fill="#e9a514"/>
@@ -401,11 +430,16 @@ footer .container{display:flex;justify-content:space-between;gap:12px;flex-wrap:
   ${bubble(420,262,196,'Sari-sari order','Ready for pick-up','#86600f',1.5)}
   ${bubble(700,330,250,'Plumber nearby','₱350 / hour · Accepted','#0e5a5f',3)}
   ${bubble(850,180,196,'House cleaning','₱1,200 / visit','#b9452c',4.5)}
-  ${bubble(1080,300,184,'Vios self-drive','₱1,800 / day','#b9452c',6)}
+  ${bubble(1060,296,190,'Vios self-drive','₱1,800 / day','#b9452c',6)}
+  ${bubble(1092,388,196,'Motorcycle rental','₱500 / day · Booked','#3b5699',7.5)}
   </svg>`;
   const host=document.getElementById('scene'); host.innerHTML=svg;
   const sv=host.querySelector('svg');
-  const fit=()=>sv.setAttribute('viewBox', host.clientWidth<640 ? '300 105 640 515' : '0 70 1200 550');
+  const still=matchMedia('(prefers-reduced-motion: reduce)').matches; let t0=performance.now(), raf=0;
+  const pan=now=>{ const p=(1-Math.cos(((now-t0)/26000)*2*Math.PI))/2; sv.setAttribute('viewBox',`${(40+p*520).toFixed(1)} 105 640 515`); raf=requestAnimationFrame(pan); };
+  const fit=()=>{ cancelAnimationFrame(raf);
+    if(host.clientWidth<560){ if(still) sv.setAttribute('viewBox','560 105 640 515'); else raf=requestAnimationFrame(pan); }
+    else sv.setAttribute('viewBox','0 70 1200 550'); };
   fit(); addEventListener('resize',fit);
 })();
 
