@@ -11,6 +11,6 @@ self.RENTA_FIREBASE = {
 };
 
 // Support email shown in the privacy policy and terms.
-self.RENTA_SUPPORT_EMAIL = "";
+self.RENTA_SUPPORT_EMAIL = "telltheworldlyf@gmail.com";
 // Public "Web Push certificate" key from Firebase > Project settings > Cloud Messaging.
 self.RENTA_VAPID = "";
