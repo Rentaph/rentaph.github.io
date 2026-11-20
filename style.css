@@ -250,3 +250,37 @@ textarea{min-height:90px;resize:vertical}
 .invstatus{width:auto!important;padding:6px 10px!important;font-size:13px;font-weight:700;border-radius:10px!important}
 a.item:hover{box-shadow:var(--shadow)}
 .seg{flex-wrap:wrap}
+
+/* ---------- business pages ---------- */
+.freebox{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:linear-gradient(120deg,#0e5a5f,#13777d);color:#fff;border-radius:18px;padding:16px 18px}
+.freebox .grow{flex:1;min-width:220px;display:flex;flex-direction:column;gap:4px}
+.freebox strong{font-family:'Bricolage Grotesque',var(--body,sans-serif);font-size:19px}
+.freebox .small{opacity:.9}
+.freebox.slim{padding:12px 14px}
+.freebox.slim strong{font-size:16px}
+.bizlogo{position:relative;overflow:hidden;display:grid;place-items:center;background:var(--t-services,#dcefeb);color:var(--c-services);font-weight:800;flex:none}
+.bizlogo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.blogo{width:56px;height:56px;border-radius:16px;font-size:19px}
+.blogo.big{width:84px;height:84px;border-radius:22px;font-size:28px}
+.bizcard .bizhead{display:flex;gap:12px;align-items:center;padding:16px 16px 0}
+.bizcard .bizhead .grow{min-width:0;display:flex;flex-direction:column;gap:2px}
+.bizcard .badge{left:auto;right:10px}
+.bizcard .cbody .row{gap:6px}
+.promo{background:#fff4d6;color:#6b4b00;border-radius:12px;padding:8px 12px;font-weight:600}
+.bizpage{display:flex;flex-direction:column;gap:16px;margin-top:10px}
+.bizhero{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.bizhero .grow{flex:1;min-width:200px;display:flex;flex-direction:column;gap:4px}
+.bizhero h1{font-size:clamp(26px,5vw,36px);line-height:1.1}
+.bizpage .acts{gap:8px}
+.bizpage .facts{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.logorow{display:flex;gap:14px;align-items:center}
+.logorow .grow{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.logorow label.btn{cursor:pointer}
+.daypick{display:flex;flex-wrap:wrap;gap:6px}
+.daypick label{display:inline-flex;margin:0}
+.daypick input{position:absolute;opacity:0;pointer-events:none}
+.daypick span{padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;background:var(--surface)}
+.daypick input:checked+span{background:var(--brand,#0e5a5f);border-color:var(--brand,#0e5a5f);color:#fff}
+.daypick input:focus-visible+span{outline:2px solid var(--brand,#0e5a5f);outline-offset:2px}
+.slugrow{display:flex;align-items:center;gap:6px}
+.slugrow input{flex:1;min-width:0}

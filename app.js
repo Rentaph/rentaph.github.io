@@ -2,7 +2,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
   createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, updateProfile, signOut, deleteUser }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, query, where, orderBy, limit, onSnapshot, arrayUnion }
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, query, where, orderBy, limit, onSnapshot, arrayUnion }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { getMessaging, getToken, isSupported } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js';
 
@@ -19,6 +19,9 @@ const ICON = {
   requests:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg>',
   guide:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5v.7"/><path d="M12 17h.01"/></svg>',
   mine:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10 12 4l9 6v10H3z"/><path d="M9 20v-6h6v6"/></svg>',
+  biz:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M5 11v9h14v-9"/><path d="M10 20v-5h4v5"/></svg>',
+  msgr:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3C7 3 3 6.7 3 11.3c0 2.6 1.3 4.9 3.3 6.4V21l3-1.7c.9.3 1.8.4 2.7.4 5 0 9-3.7 9-8.3S17 3 12 3z"/><path d="m7.5 13 3-3 2.5 2 3.5-3-3 3-2.5-2z"/></svg>',
+  share:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>',
   close:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2"/></svg>',
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
@@ -90,7 +93,8 @@ const EXAMPLES = [
 
 /* ---------- state ---------- */
 const S = {user:null,isAdmin:false,ready:false,error:'',profile:null,
-  listings:[],reviews:[],mineList:[],recv:[],sent:[],saved:new Set(),cat:'all',q:'',city:'',prov:'',brgy:'',view:'explore',photos:new Map(),openThread:null};
+  listings:[],reviews:[],mineList:[],recv:[],sent:[],saved:new Set(),cat:'all',q:'',city:'',prov:'',brgy:'',view:'explore',photos:new Map(),openThread:null,
+  biz:[],bizExtra:new Map(),bizKey:'',bizMiss:null,bizFetching:null};
 let auth=null, db=null, fbApp=null, unsubs=[], threadUnsub=null, threadMsgs=[];
 
 const $ = s=>document.querySelector(s);
@@ -215,7 +219,7 @@ function fillCities(){
 }
 function buildShell(){
   const cats=$('#cats');
-  cats.innerHTML=[['all','All'],...Object.entries(CATS).map(([k,v])=>[k,v.label])].map(([k,l])=>`<button type="button" data-cat="${k}" aria-pressed="${S.cat===k}">${ICON[k]}${l}</button>`).join('');
+  cats.innerHTML=[['all','All'],['biz','Businesses'],...Object.entries(CATS).map(([k,v])=>[k,v.label])].map(([k,l])=>`<button type="button" data-cat="${k}" aria-pressed="${S.cat===k}">${ICON[k]}${l}</button>`).join('');
   cats.onclick=e=>{const b=e.target.closest('[data-cat]'); if(!b) return; S.cat=b.dataset.cat; cats.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b)); if(S.view!=='explore') location.hash='explore'; else render();};
   $('#prov').innerHTML=provOptions(S.prov,'All Philippines');
   $('#prov').onchange=e=>{S.prov=e.target.value; S.city=''; S.brgy=''; fillCities(); if(S.view!=='explore') location.hash='explore'; else render();};
@@ -232,7 +236,8 @@ let pendingOpen=null;
 function route(){
   let h=location.hash.slice(1);
   if(h.startsWith('l-')){ pendingOpen=h.slice(2); history.replaceState(null,'','#explore'); h='explore'; }
-  if(h.startsWith('explore-')){ const c=h.slice(8); if(CATS[c]){ S.cat=c; document.querySelectorAll('#cats button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.cat===c)); } history.replaceState(null,'','#explore'); h='explore'; }
+  if(h.startsWith('b/')){ S.bizKey=h.slice(2); S.bizMiss=null; S.view='biz'; S.cat='biz'; document.querySelectorAll('#cats button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.cat==='biz')); render(); $('main').scrollTop=0; return; }
+  if(h.startsWith('explore-')){ const c=h.slice(8); if(CATS[c]||c==='biz'){ S.cat=c; document.querySelectorAll('#cats button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.cat===c)); } history.replaceState(null,'','#explore'); h='explore'; }
   S.view=['explore','saved','requests','mine','guide','invites'].includes(h)?h:'explore';
   const v=$('#view'); v.classList.add('anim'); clearTimeout(route.t); route.t=setTimeout(()=>v.classList.remove('anim'),1200);
   render(); $('main').scrollTop=0;
@@ -281,6 +286,8 @@ function render(){
   $('#welcome').hidden = !(S.view==='explore' && !S.q);
   const v=$('#view'); let h='';
   if(S.error) h+=`<div class="note">${esc(S.error)}</div>`;
+  if(S.view==='biz'){ v.innerHTML=h+renderBizPage(); loadPhotos(v); return; }
+  if(S.view==='explore'&&S.cat==='biz'){ v.innerHTML=h+renderBizDir(); loadPhotos(v); return; }
   if(S.view==='explore'){
     if(!S.ready&&!S.error) h+='<div class="note">Loading listings…</div>';
     const list=filtered(); const catL=S.cat==='all'?(list.length===1?'listing':'listings'):CATS[S.cat].label.toLowerCase();
@@ -333,7 +340,8 @@ function renderMine(){
   if(!S.user) return h+signInNote('post your services, vehicles, apartments or products');
   const me=S.profile;
   h+=`<a class="item" href="#invites" style="text-decoration:none;color:inherit"><div class="grow"><h3>Invite businesses</h3><div class="small muted">Track local businesses you invite to Renta.ph and send each invite in one tap.</div></div><span class="btn sm">Open</span></a>`;
-  if(me) h+=`<div class="item"><div class="grow"><div class="small muted">Shown to customers as</div><h3>${esc(me.providerName||'')}</h3><div class="small num">${esc(me.phone||'')}</div></div><button class="btn sm" data-profile>Edit</button></div>`;
+  h+=bizMineHTML();
+  if(me&&!me.slug) h+=`<div class="item"><div class="grow"><div class="small muted">Shown to customers as</div><h3>${esc(me.providerName||'')}</h3><div class="small num">${esc(me.phone||'')}</div></div><button class="btn sm" data-profile>Edit</button></div>`;
   const items=S.mineList;
   if(!items.length) return h+`<div class="empty">${ICON.mine}<div>You have no listings yet.</div><div class="small">Offer a service, rent out a car, motorbike or room, or sell a product. It takes a minute.</div><a class="btn sm" href="#guide">See how it works</a></div>`;
   return h+'<div class="list">'+items.map((it,i)=>{
@@ -445,7 +453,7 @@ function openItem(id){
   const body=`${galleryHTML(it)}
     <div><div class="ctag" style="color:var(--c-${k})">${esc(CATS[k].one)} · ${esc(it.sub||'')}</div><h2 style="font-size:25px;margin-top:4px">${esc(it.title)}</h2></div>
     <div class="price num" style="font-size:24px;padding:0">${peso(it.price)} <span>/ ${esc(UNITS[it.unit]||it.unit)}</span></div>
-    <div class="facts"><div class="fact"><b>Location</b>${esc(placeLine(it))}</div><div class="fact"><b>Provider</b>${esc(it.providerName||'Provider')}</div></div>
+    <div class="facts"><div class="fact"><b>Location</b>${esc(placeLine(it))}</div><div class="fact"><b>Provider</b>${esc(it.providerName||'Provider')}${(()=>{ const b=it.example?EXAMPLE_BIZ.find(x=>x.providerName===it.providerName):bizByOwner(it.ownerId); return b?`<div><button class="linkbtn small" data-biz="${esc(bizKey(b))}">View business page</button></div>`:''; })()}</div></div>
     ${it.desc?`<div class="desc">${esc(it.desc)}</div>`:''}
     ${it.pin&&typeof it.pin.lat==='number'?`<div class="mapcard"><div class="pinmap small-map" id="d-map" aria-label="Map showing ${it.pinApprox?'the approximate area':'the location'} of this listing"></div>
       <div class="row" style="justify-content:space-between"><span class="small muted">${it.pinApprox?'Approximate area. The provider shares the exact spot after you book.':'Pinned by the provider.'}</span><a class="btn sm" href="${mapsLink(it.pin)}" target="_blank" rel="noopener">Open in Google Maps</a></div></div>`:''}
@@ -623,7 +631,7 @@ function openProfile(after){
     sh.querySelector('#pf').onsubmit=async e=>{ e.preventDefault(); const f=new FormData(e.target); const b=e.target.querySelector('button'); b.disabled=true;
       const p={providerName:String(f.get('providerName')).trim(),phone:String(f.get('phone')).trim(),updatedAt:Date.now()};
       try{
-        await setDoc(doc(db,'providers',S.user.uid),p); S.profile=p;
+        await setDoc(doc(db,'providers',S.user.uid),p,{merge:true}); S.profile={...(S.profile||{}),...p};
         await Promise.all(S.mineList.filter(x=>x.providerName!==p.providerName||x.phone!==p.phone).map(x=>updateDoc(doc(db,'listings',x.id),{providerName:p.providerName,phone:p.phone,updatedAt:Date.now()})));
         closeSheet(); toast('Profile saved.'); render(); after&&setTimeout(after,350);
       }catch(x){ b.disabled=false; toast(errText(x)); } };
@@ -631,7 +639,7 @@ function openProfile(after){
 }
 function openEditor(id){
   if(!S.profile||!S.profile.providerName){ openProfile(()=>openEditor(id)); return; }
-  const it=id?S.mineList.find(x=>x.id===id):null; const cat=it?.cat||(S.cat!=='all'?S.cat:'services');
+  const it=id?S.mineList.find(x=>x.id===id):null; const cat=it?.cat||(CATS[S.cat]?S.cat:'services');
   const subOpts=c=>CATS[c].subs.map(s=>`<option ${it?.sub===s?'selected':''}>${s}</option>`).join('');
   const oldCount=it?photoCount(it):0;
   let pics=[]; // {src, from: original slot index, or -1 for new}
@@ -822,11 +830,242 @@ function openInvTemplate(){
 }
 async function markInvited(i){ const b=INV.items&&INV.items[i]; if(!b||(b.status&&b.status!=='todo')) return; const items=INV.items.slice(); items[i]={...b,status:'invited',invitedAt:Date.now()}; try{ await saveInvites(items); }catch(_){} }
 
+/* ---------- business pages: free forever ---------- */
+const BIZ_CATS=['Food & bakery','Sari-sari & grocery','Restaurant & carinderia','Repair & home services','Beauty, salon & spa','Health & wellness','Freelance & online services','Farm & fresh produce','Small manufacturing','Retail & fashion','Vehicle & equipment rental','Rooms & property rental','Events & catering','Other'];
+const PAYS=['Cash','GCash','Maya','Bank transfer','Card'];
+const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const EXAMPLE_BIZ=[
+  {uid:'ex-lola',slug:'lola-nenas-kitchen',providerName:'Lola Nena’s Kitchen',bizCat:'Food & bakery',province:'Cebu',city:'Talisay',barangay:'Poblacion',about:'Home-made pasalubong since 1998: danggit, dried mangoes and chicharon, packed fresh to order.',hours:{days:[1,2,3,4,5,6],open:'07:00',close:'19:00'},pay:['Cash','GCash','Maya'],area:'Talisay, Cebu City and Minglanilla',delivery:true,promo:'Free delivery in Talisay for orders ₱1,000 and up.'},
+  {uid:'ex-cool',slug:'bisaya-cool-aircon-care',providerName:'Bisaya Cool Aircon Care',bizCat:'Repair & home services',province:'Cebu',city:'Mandaue',barangay:'Subangdaku',about:'Aircon cleaning, repair and installation for homes and small offices.',hours:{days:[1,2,3,4,5,6],open:'08:00',close:'17:00'},pay:['Cash','GCash'],area:'Mandaue, Cebu City, Lapu-Lapu',delivery:false,promo:''},
+  {uid:'ex-mactan',slug:'mactan-wheels',providerName:'Mactan Wheels',bizCat:'Vehicle & equipment rental',province:'Cebu',city:'Lapu-Lapu',barangay:'Pusok',about:'Self-drive cars and scooters near the airport.',hours:{days:[0,1,2,3,4,5,6],open:'06:00',close:'22:00'},pay:['Cash','GCash','Bank transfer'],area:'Airport pick-up available',delivery:true,promo:'₱100 off scooters on weekdays.'},
+  {uid:'ex-linis',slug:'linis-ate-cleaning',providerName:'Linis Ate Cleaning',bizCat:'Repair & home services',province:'Cebu',city:'Cebu City',barangay:'Lahug',about:'Trusted house and condo cleaners. We bring our own supplies.',hours:{days:[0,1,2,3,4,5,6],open:'07:00',close:'18:00'},pay:['Cash','GCash','Maya'],area:'Cebu City and Mandaue',delivery:false,promo:''}
+].map(b=>({...b,example:true,listed:true}));
+const slugify = s=>String(s||'').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,48).replace(/-+$/,'');
+const safeUrl = u=>/^https:\/\/[^\s"'<>]+$/i.test(u||'')?u:'';
+const msgrHref = v=>{ v=String(v||'').trim(); if(!v) return ''; if(/^https:\/\//i.test(v)) return safeUrl(v); return 'https://m.me/'+encodeURIComponent(v.replace(/^@/,'').replace(/^(m\.me|facebook\.com|fb\.com)\//i,'')); };
+const fbHref = v=>{ v=String(v||'').trim(); if(!v) return ''; if(/^https:\/\//i.test(v)) return safeUrl(v); return 'https://facebook.com/'+encodeURIComponent(v.replace(/^@/,'').replace(/^(www\.)?facebook\.com\//i,'')); };
+const bizKey = b=>b.slug||b.uid;
+const bizUrl = b=>location.origin+location.pathname.replace(/[^/]*$/,'')+'app.html#b/'+encodeURIComponent(bizKey(b));
+function bizAll(){ const real=S.biz.filter(b=>b.listed&&b.providerName); return real.length?real:(S.ready?EXAMPLE_BIZ:[]); }
+function bizByOwner(uid){ return S.biz.find(b=>b.uid===uid&&b.listed); }
+function findBiz(key){
+  key=decodeURIComponent(key||'');
+  return S.biz.find(b=>b.slug===key||b.uid===key)||S.bizExtra.get(key)||EXAMPLE_BIZ.find(b=>b.slug===key||b.uid===key)
+    ||(S.user&&S.profile&&(key===S.user.uid||key===S.profile.slug)?{...S.profile,uid:S.user.uid}:null);
+}
+function bizItems(b){ return b.example?EXAMPLES.filter(x=>x.providerName===b.providerName):S.listings.filter(x=>x.ownerId===b.uid&&x.active!==false); }
+function bizFrom(b){ const p=bizItems(b).map(x=>Number(x.price)).filter(n=>n>0); return p.length?Math.min(...p):null; }
+const fmtT = t=>{ const [h,m]=String(t||'').split(':').map(Number); if(isNaN(h)) return ''; return new Date(2000,0,1,h,m||0).toLocaleTimeString('en-PH',{hour:'numeric',minute:'2-digit'}); };
+function openState(h){
+  if(!h||!Array.isArray(h.days)||!h.days.length||!h.open||!h.close) return null;
+  const toM=t=>{ const [a,b]=String(t).split(':').map(Number); return a*60+(b||0); };
+  const now=new Date(), m=now.getHours()*60+now.getMinutes(), d=now.getDay(), prev=(d+6)%7, o=toM(h.open), c=toM(h.close);
+  let open;
+  if(o===c) open=h.days.includes(d);
+  else if(c>o) open=h.days.includes(d)&&m>=o&&m<c;
+  else open=(h.days.includes(d)&&m>=o)||(h.days.includes(prev)&&m<c);
+  return {open,label:open?(o===c?'Open 24 hours':'Open now · until '+fmtT(h.close)):'Closed now'};
+}
+function hoursLine(h){
+  if(!h||!Array.isArray(h.days)||!h.days.length) return 'By appointment';
+  const order=[1,2,3,4,5,6,0].filter(x=>h.days.includes(x)); const runs=[];
+  order.forEach(x=>{ const r=runs[runs.length-1]; const pos=[1,2,3,4,5,6,0].indexOf(x); if(r&&r.end===pos-1){ r.end=pos; r.to=x; } else runs.push({start:pos,end:pos,from:x,to:x}); });
+  const days=order.length===7?'Daily':runs.map(r=>r.from===r.to?DAYS[r.from]:DAYS[r.from]+(r.end-r.start>1?'–':', ')+DAYS[r.to]).join(', ');
+  return days+' · '+(h.open===h.close?'24 hours':fmtT(h.open)+' – '+fmtT(h.close));
+}
+function openPill(b){ const s=openState(b.hours); return s?`<span class="pill ${s.open?'s-accepted':'s-declined'}">${s.label}</span>`:''; }
+function logoHTML(b,cls){
+  const ini=esc((b.providerName||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase());
+  return `<div class="${cls} bizlogo" data-photo="biz-${esc(b.uid)}" data-has="${b.logo&&!b.example?1:0}"><span>${ini}</span>${S.photos.get('biz-'+b.uid)&&b.logo?`<img alt="" src="${S.photos.get('biz-'+b.uid)}">`:''}</div>`;
+}
+function bizCardHTML(b,i){
+  const n=bizItems(b).length, from=bizFrom(b);
+  return `<button type="button" class="card bizcard" style="--i:${Math.min(i,12)}" data-biz="${esc(bizKey(b))}">
+    ${b.example?'<span class="badge">Example</span>':''}
+    <div class="bizhead">${logoHTML(b,'blogo')}<div class="grow"><div class="ctag">${esc(b.bizCat||'Local business')}</div><h3>${esc(b.providerName)}</h3><div class="prov">${esc(placeLine(b)||'Philippines')}</div></div></div>
+    <div class="cbody">
+      <div class="row">${openPill(b)}${ratingBadge(b.uid)}${b.delivery?'<span class="pill s-pending">Delivers</span>':''}</div>
+      ${b.promo?`<div class="promo small">${esc(b.promo)}</div>`:''}
+      <div class="small muted">${n?`${n} product${n>1?'s':''} & service${n>1?'s':''}`:'No listings yet'}${from?` · from <b class="num" style="color:var(--ink)">${peso(from)}</b>`:''}</div>
+    </div></button>`;
+}
+function freeBanner(){
+  const has=S.profile&&S.profile.listed;
+  return `<div class="freebox"><div class="grow"><strong>List your business. It’s FREE. Forever.</strong>
+    <div class="small">Get your own page with your products, prices, hours, GCash/Maya and a Message button. No subscription, no listing fee, no commission.</div></div>
+    <button class="btn gold sm" data-bizedit>${has?'Edit my page':'Create my free page'}</button></div>`;
+}
+function bizFiltered(){
+  return bizAll()
+    .filter(b=>!S.prov||provOf(b)===S.prov)
+    .filter(b=>!S.city||sameArea(b.city,S.city))
+    .filter(b=>!S.brgy||b.barangay===S.brgy)
+    .filter(b=>!S.q||[b.providerName,b.bizCat,b.about,b.city,b.barangay,provOf(b),b.area,b.promo,...bizItems(b).map(x=>x.title+' '+(x.sub||''))].join(' ').toLowerCase().includes(S.q));
+}
+function renderBizDir(){
+  const list=bizFiltered().sort((x,y)=>(openState(y.hours)?.open?1:0)-(openState(x.hours)?.open?1:0));
+  let h=freeBanner();
+  if(S.ready&&!S.biz.some(b=>b.listed)) h+=`<div class="note"><strong>Business pages are brand new.</strong> These are examples. Create the first real page with the button above.</div>`;
+  h+=`<div class="bar"><h2>${S.q?'Businesses matching your search':'Local businesses'}</h2><span class="muted small num">${list.length} ${list.length===1?'business':'businesses'}${areaLabel()?' in '+esc(areaLabel()):''}</span></div>`;
+  if(list.length) return h+`<div class="grid">${list.map(bizCardHTML).join('')}</div>`;
+  return h+`<div class="empty">${ICON.biz}<div><strong style="color:var(--ink)">No businesses ${areaLabel()?'in '+esc(areaLabel()):'here'} yet.</strong></div><div class="small">Know a sari-sari store, baker or repairman nearby? Invite them, it’s free for them.</div>
+    <div class="row" style="justify-content:center">${areaLabel()?'<button class="btn sm" data-clear="city">Show all areas</button>':''}${S.q?'<button class="btn sm" data-clear="q">Clear search</button>':''}<button class="btn sm primary" data-bizedit>Create my free page</button></div></div>`;
+}
+function renderBizPage(){
+  const b=findBiz(S.bizKey);
+  if(!b){
+    if(S.bizMiss===S.bizKey) return `<div class="empty">${ICON.biz}<div><strong style="color:var(--ink)">This business page isn’t available.</strong></div><div class="small">It may have been renamed or hidden by its owner.</div><a class="btn sm primary" href="#explore-biz">Browse businesses</a></div>`;
+    fetchBiz(S.bizKey); return '<div class="note">Loading business page…</div>';
+  }
+  const mine=S.user&&b.uid===S.user.uid; const items=bizItems(b); const from=bizFrom(b); const st=openState(b.hours);
+  const msgr=msgrHref(b.messenger), fb=fbHref(b.facebook);
+  const maps='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent([b.street,b.barangay,b.city,provOf(b)].filter(Boolean).join(', ')||b.providerName);
+  return `<a class="linkbtn small" href="#explore-biz">← All businesses</a>
+    <section class="bizpage">
+      <div class="bizhero">${logoHTML(b,'blogo big')}<div class="grow">
+        <div class="ctag">${esc(b.bizCat||'Local business')}</div><h1>${esc(b.providerName)}</h1>
+        <div class="small muted">${esc(placeLine(b)||'Philippines')}</div>
+        <div class="row">${openPill(b)}${ratingBadge(b.uid,true)}${b.delivery?'<span class="pill s-pending">Delivers</span>':''}${b.example?'<span class="pill">Example</span>':''}</div>
+      </div></div>
+      ${b.promo?`<div class="promo">🏷️ ${esc(b.promo)}</div>`:''}
+      <div class="row acts">
+        ${mine?'<button class="btn primary" data-bizedit>Edit my page</button>':`<button class="btn accent" data-bizmsg="${esc(bizKey(b))}">${ICON.requests}Message business</button>`}
+        ${msgr&&!mine?`<a class="btn" href="${esc(msgr)}" target="_blank" rel="noopener">${ICON.msgr}Messenger</a>`:''}
+        ${b.phone&&!mine?`<a class="btn" href="${esc(telHref(b.phone))}">${ICON.phone}<span class="num">${esc(b.phone)}</span></a>`:''}
+        ${fb?`<a class="btn" href="${esc(fb)}" target="_blank" rel="noopener">Facebook</a>`:''}
+        <a class="btn" href="${esc(maps)}" target="_blank" rel="noopener">Directions</a>
+        <button class="btn" data-bizshare="${esc(bizKey(b))}">${ICON.share}Share page</button>
+      </div>
+      ${b.about?`<div class="desc">${esc(b.about)}</div>`:''}
+      <div class="facts">
+        <div class="fact"><b>Location</b>${esc([b.street,placeLine(b)].filter(Boolean).join(', ')||'Not set')}</div>
+        <div class="fact"><b>Hours</b>${esc(hoursLine(b.hours))}${st?`<div class="small muted">${st.label}</div>`:''}</div>
+        <div class="fact"><b>${b.delivery?'Delivery / service area':'Service area'}</b>${esc(b.area||'Ask the business')}</div>
+        <div class="fact"><b>Payment</b>${esc((b.pay||[]).join(', ')||'Ask the business')}</div>
+        <div class="fact"><b>Starting price</b>${from?`<span class="num">${peso(from)}</span>`:'Ask the business'}</div>
+        <div class="fact"><b>Listings</b>${items.length}</div>
+      </div>
+      <div class="bar"><h2 style="font-size:21px">Products & services</h2>${mine?`<button class="btn sm" data-new>${ICON.plus}Add a listing</button>`:''}</div>
+      ${items.length?`<div class="grid">${items.map(cardHTML).join('')}</div>`:`<div class="note">${mine?'Add your first product or service so customers see your prices.':'This business hasn’t added products or services yet. Message them to ask.'}</div>`}
+      ${b.example?'<div class="note">This is an example business page to show how Renta.ph works.</div>':reviewsHTML({ownerId:b.uid,providerName:b.providerName})}
+      <div class="small muted" style="text-align:center">Listed free on Renta.ph. No fees, no commission. ${mine?'':'<button class="linkbtn small" data-bizedit>List your business too</button>'}</div>
+    </section>`;
+}
+async function fetchBiz(key){
+  if(!db||S.bizFetching===key) return; S.bizFetching=key; key=decodeURIComponent(key);
+  try{
+    let d=null; const q=await getDocs(query(collection(db,'providers'),where('slug','==',key),limit(1)));
+    if(!q.empty) d=q.docs[0]; else { const g=await getDoc(doc(db,'providers',key)); if(g.exists()) d=g; }
+    if(d&&d.data().providerName) S.bizExtra.set(key,{uid:d.id,...d.data()}); else S.bizMiss=key;
+  }catch(_){ S.bizMiss=key; }
+  S.bizFetching=null; if(S.view==='biz') render();
+}
+async function shareBiz(key){
+  const b=findBiz(key); if(!b) return; const url=bizUrl(b);
+  if(navigator.share){ try{ await navigator.share({title:b.providerName,text:`${b.providerName} on Renta.ph`,url}); return; }catch(e){ if(e&&e.name==='AbortError') return; } }
+  try{ await navigator.clipboard.writeText(url); toast('Page link copied. Paste it on Facebook or Messenger.'); }catch(_){ toast(url); }
+}
+function openBizMessage(key){
+  const b=findBiz(key); if(!b) return;
+  if(b.example){ toast('This is an example business. You can’t message it.'); return; }
+  if(S.user&&b.uid===S.user.uid){ toast('This is your own business page.'); return; }
+  const itemId='biz-'+b.uid; const ex=activeRequest(itemId); if(ex){ openThread(ex.id); return; }
+  openSheet('Message business',`<div class="small muted">To <strong style="color:var(--ink)">${esc(b.providerName)}</strong>. They reply in your Inbox.</div>
+    <form id="bmf"><label>Message<textarea name="message" required maxlength="800" placeholder="Hi! Do you have…? How much is…? Can you deliver to…?"></textarea></label>
+    <label>Your mobile number<span class="hint">Shared only with this business so they can reach you.</span><input type="tel" name="contact" required maxlength="20" placeholder="09XX XXX XXXX"></label>
+    <button class="btn accent" id="bm-send">${ICON.send}Send message</button></form>`,sh=>{
+    sh.querySelector('#bmf').onsubmit=async e=>{ e.preventDefault(); const f=new FormData(e.target); const btn=sh.querySelector('#bm-send'); btn.disabled=true;
+      const now=Date.now(); const msg=String(f.get('message')||'').trim().slice(0,800);
+      const data={ownerId:b.uid,itemId,itemTitle:('Message to '+b.providerName).slice(0,80),cat:'services',providerName:b.providerName||'',providerPhone:b.phone||'',
+        fromId:S.user.uid,fromName:(S.user.displayName||'').slice(0,60),date1:'',date2:'',time:'',qty:'',message:msg,contact:String(f.get('contact')||'').slice(0,20),
+        status:'pending',reply:'',createdAt:now,updatedAt:now,lastMsg:msg.slice(0,140),lastAt:now,lastFrom:S.user.uid,fromSeen:now,ownerSeen:0};
+      try{ const ref=await addDoc(collection(db,'inquiries'),data); if(!S.sent.some(x=>x.id===ref.id)) S.sent=[{id:ref.id,...data},...S.sent];
+        closeSheet(); toast('Message sent. The business will reply in your Inbox.'); setTimeout(()=>openThread(ref.id),350);
+      }catch(x){ btn.disabled=false; toast(errText(x)); } };
+  });
+}
+function openBizEditor(){
+  const me=S.profile||{}; const uid=S.user.uid; const h=me.hours||{days:[1,2,3,4,5,6],open:'08:00',close:'18:00'}; const noHours=me.provider&&!me.hours;
+  let logo=me.logo?(S.photos.get('biz-'+uid)||''):''; let logoChanged=false;
+  openSheet(me.listed?'Edit your business page':'Your free business page',`<div class="freebox slim"><div class="grow"><strong>FREE. Forever.</strong><div class="small">No monthly fee, no listing fee, no commission.</div></div></div>
+  <form id="bzf">
+    <div class="logorow"><div class="blogo big bizlogo" id="bz-logo"><span>${esc((me.providerName||S.user.displayName||'?').trim()[0]||'?').toUpperCase()}</span>${logo?`<img alt="" src="${logo}">`:''}</div>
+      <div class="grow"><label class="btn sm">${ICON.camera}<span>${logo?'Change logo':'Add logo or photo'}</span><input type="file" id="bz-f" accept="image/*" hidden></label>
+      <button type="button" class="linkbtn small" id="bz-rm" ${logo?'':'hidden'}>Remove logo</button></div></div>
+    <label>Business name<input type="text" name="providerName" required maxlength="60" value="${esc(me.providerName||S.user.displayName||'')}" placeholder="e.g. Juan’s Bakes"></label>
+    <div class="two"><label>Category<select name="bizCat">${BIZ_CATS.map(c=>`<option ${me.bizCat===c?'selected':''}>${c}</option>`).join('')}</select></label>
+    <label>Mobile number<input type="tel" name="phone" required maxlength="20" value="${esc(me.phone||'')}" placeholder="09XX XXX XXXX"></label></div>
+    <label>About your business<span class="hint">What you sell or do, since when, what makes you different.</span><textarea name="about" maxlength="600">${esc(me.about||'')}</textarea></label>
+    ${addrHTML('bz',me,{legend:'Where is the business?',street:true,streetLabel:'Street or landmark (optional, shown on your page)',hint:'Home-based? Leave the street blank and only your barangay shows.'})}
+    <fieldset><legend>Business hours</legend>
+      <label class="check"><input type="checkbox" id="bz-appt" ${noHours?'checked':''}> No fixed hours / by appointment</label>
+      <div id="bz-hrs" ${noHours?'hidden':''}><div class="daypick">${[1,2,3,4,5,6,0].map(d=>`<label><input type="checkbox" name="day" value="${d}" ${h.days.includes(d)?'checked':''}><span>${DAYS[d]}</span></label>`).join('')}</div>
+      <div class="two"><label>Opens<input type="time" name="open" value="${esc(h.open)}"></label><label>Closes<input type="time" name="close" value="${esc(h.close)}"></label></div></div>
+    </fieldset>
+    <label>Service or delivery area<input type="text" name="area" maxlength="120" value="${esc(me.area||'')}" placeholder="e.g. All of Bacolod and Talisay"></label>
+    <label class="check"><input type="checkbox" name="delivery" ${me.delivery?'checked':''}> We deliver or do home service</label>
+    <fieldset><legend>Payments you accept</legend><div class="daypick">${PAYS.map(p=>`<label><input type="checkbox" name="pay" value="${p}" ${(me.pay||['Cash']).includes(p)?'checked':''}><span>${p}</span></label>`).join('')}</div></fieldset>
+    <div class="two"><label>Messenger<span class="hint">Your page username or m.me link</span><input type="text" name="messenger" maxlength="120" value="${esc(me.messenger||'')}" placeholder="juansbakes"></label>
+    <label>Facebook page<span class="hint">Optional</span><input type="text" name="facebook" maxlength="160" value="${esc(me.facebook||'')}" placeholder="facebook.com/juansbakes"></label></div>
+    <label>Promotion<span class="hint">Optional. Shown at the top of your page.</span><input type="text" name="promo" maxlength="160" value="${esc(me.promo||'')}" placeholder="e.g. 10% off ensaymada every Friday"></label>
+    <label>Page link<span class="hint">Letters, numbers and dashes. You can share this anywhere.</span><div class="slugrow"><span class="small muted">…/app.html#b/</span><input type="text" name="slug" maxlength="60" value="${esc(me.slug||'')}" placeholder="juans-bakes-bacolod"></div></label>
+    <label class="check"><input type="checkbox" name="listed" ${me.listed===false?'':'checked'}> Show my page in the Businesses directory</label>
+    <div class="err" id="bz-err" hidden></div>
+    <button class="btn primary" id="bz-save">${me.listed?'Save page':'Publish my free page'}</button></form>`,sh=>{
+    const f=sh.querySelector('#bzf'); const err=sh.querySelector('#bz-err'); const showErr=m=>{ err.hidden=!m; err.textContent=m||''; };
+    const getLoc=addrMount(sh,'bz',me);
+    if(me.logo&&!logo) getPhoto('biz-'+uid).then(src=>{ if(src&&!logoChanged){ logo=src; drawLogo(); } });
+    const drawLogo=()=>{ const el=sh.querySelector('#bz-logo'); el.querySelector('img')?.remove(); if(logo) el.insertAdjacentHTML('beforeend',`<img alt="" src="${logo}">`); sh.querySelector('#bz-rm').hidden=!logo; };
+    sh.querySelector('#bz-f').onchange=async e=>{ const file=e.target.files[0]; if(!file) return; try{ logo=await compress(file); logoChanged=true; drawLogo(); showErr(''); }catch(_){ showErr('That photo couldn’t be used. Try a JPG or PNG.'); } };
+    sh.querySelector('#bz-rm').onclick=()=>{ logo=''; logoChanged=true; drawLogo(); };
+    sh.querySelector('#bz-appt').onchange=e=>{ sh.querySelector('#bz-hrs').hidden=e.target.checked; };
+    const nameIn=f.querySelector('[name=providerName]'), slugIn=f.querySelector('[name=slug]');
+    const autoSlug=()=>{ if(slugIn.dataset.touched) return; const loc=getLoc(); slugIn.value=slugify([nameIn.value,loc.city].filter(Boolean).join(' '))+'-'+uid.slice(0,4).toLowerCase(); };
+    if(!me.slug) autoSlug(); else slugIn.dataset.touched=1;
+    nameIn.addEventListener('input',autoSlug); sh.querySelector('#bz-city').addEventListener('change',autoSlug);
+    slugIn.addEventListener('input',()=>{ slugIn.dataset.touched=1; });
+    f.onsubmit=async e=>{ e.preventDefault(); showErr(''); const d=new FormData(f); const b=sh.querySelector('#bz-save'); const lbl=b.textContent;
+      const loc=getLoc(); if(!loc.province||!loc.city){ showErr('Choose the province and city or municipality.'); return; }
+      const slug=slugify(d.get('slug'))||slugify(d.get('providerName'))+'-'+uid.slice(0,4).toLowerCase();
+      if(slug.length<3){ showErr('The page link needs at least 3 letters or numbers.'); return; }
+      const days=d.getAll('day').map(Number); const appt=sh.querySelector('#bz-appt').checked;
+      if(!appt&&!days.length){ showErr('Pick the days you’re open, or tick “No fixed hours”.'); return; }
+      b.disabled=true; b.textContent='Saving…';
+      try{
+        if(slug!==me.slug){ const q=await getDocs(query(collection(db,'providers'),where('slug','==',slug),limit(2)));
+          if(q.docs.some(x=>x.id!==uid)){ b.disabled=false; b.textContent=lbl; showErr('That page link is taken. Try adding your town or a number.'); return; } }
+        const p={providerName:String(d.get('providerName')).trim().slice(0,60),phone:String(d.get('phone')).trim().slice(0,20),bizCat:String(d.get('bizCat')).slice(0,40),
+          about:String(d.get('about')||'').trim().slice(0,600),province:loc.province.slice(0,40),city:loc.city.slice(0,40),barangay:loc.barangay.slice(0,60),street:loc.street.slice(0,120),
+          hours:appt?null:{days,open:String(d.get('open')||'08:00'),close:String(d.get('close')||'18:00')},area:String(d.get('area')||'').trim().slice(0,120),delivery:!!d.get('delivery'),
+          pay:d.getAll('pay').map(String).slice(0,6),messenger:String(d.get('messenger')||'').trim().slice(0,120),facebook:String(d.get('facebook')||'').trim().slice(0,160),
+          promo:String(d.get('promo')||'').trim().slice(0,160),slug,listed:!!d.get('listed'),logo:!!logo,provider:true,updatedAt:Date.now()};
+        if(logoChanged){ if(logo){ await setDoc(doc(db,'photos','biz-'+uid),{ownerId:uid,data:logo}); S.photos.set('biz-'+uid,logo); }
+          else { S.photos.delete('biz-'+uid); deleteDoc(doc(db,'photos','biz-'+uid)).catch(()=>{}); } }
+        await setDoc(doc(db,'providers',uid),p,{merge:true}); S.profile={...me,...p};
+        await Promise.all(S.mineList.filter(x=>x.providerName!==p.providerName||x.phone!==p.phone).map(x=>updateDoc(doc(db,'listings',x.id),{providerName:p.providerName,phone:p.phone,updatedAt:Date.now()})));
+        closeSheet(); toast(p.listed?'Your business page is live.':'Saved. Your page is hidden from the directory.'); location.hash='b/'+slug; render();
+      }catch(x){ b.disabled=false; b.textContent=lbl; toast(errText(x)); }
+    };
+  });
+}
+function bizMineHTML(){
+  const me=S.profile;
+  if(!me||!me.slug) return freeBanner();
+  const b={...me,uid:S.user.uid};
+  return `<div class="item">${logoHTML(b,'mini')}<div class="grow"><div class="small muted">Your free business page${me.listed?'':' · hidden from the directory'}</div><h3>${esc(me.providerName)}</h3>
+    <div class="small muted" style="word-break:break-all">${esc(bizUrl(b))}</div>
+    <div class="row"><a class="btn sm primary" href="#b/${esc(encodeURIComponent(me.slug))}">View page</a><button class="btn sm" data-bizshare="${esc(me.slug)}">${ICON.share}Share</button><button class="btn sm" data-bizedit>Edit</button></div></div></div>`;
+}
+
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
   const t=e.target.closest('button,[data-open]'); if(!t) return;
   const D=t.dataset;
   if(D.open) openItem(D.open);
+  else if(D.biz){ if($('#scrim').classList.contains('open')) closeSheet(); location.hash='b/'+D.biz; }
+  else if(D.bizedit!==undefined){ needUser(()=>openBizEditor()); }
+  else if(D.bizmsg){ needUser(()=>openBizMessage(D.bizmsg)); }
+  else if(D.bizshare){ shareBiz(D.bizshare); }
   else if(D.invadd!==undefined) openInvEditor(null);
   else if(D.invedit!==undefined) openInvEditor(Number(D.invedit));
   else if(D.invtpl!==undefined) openInvTemplate();
@@ -885,14 +1124,18 @@ function start(){
   onAuthStateChanged(auth,u=>{ S.user=u; renderAcct(); watchUser(u); render(); if(u) registerPush(); });
   onSnapshot(query(collection(db,'reviews'),orderBy('at','desc'),limit(1000)),s=>{
     S.reviews=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.providerId&&x.stars>=1&&x.stars<=5);
-    if(S.view==='explore'||S.view==='saved') render(); refreshOpenThread();
+    if(S.view==='explore'||S.view==='saved'||S.view==='biz') render(); refreshOpenThread();
+  },()=>{});
+  onSnapshot(query(collection(db,'providers'),where('listed','==',true),limit(500)),s=>{
+    S.biz=s.docs.map(d=>({uid:d.id,...d.data()})).filter(b=>b.providerName);
+    if(S.view==='biz'||(S.view==='explore'&&S.cat==='biz')) render();
   },()=>{});
   const timer=setTimeout(()=>{ if(!S.ready){ S.error='Listings can’t be reached yet. Check your connection; this page keeps trying.'; render(); } },10000);
   onSnapshot(query(collection(db,'listings'),orderBy('createdAt','desc'),limit(500)),s=>{
     clearTimeout(timer); S.error=''; S.ready=true;
     S.listings=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.title).map(x=>({...x,cat:catOf(x.cat)}));
     fillCities();
-    if(S.view==='explore'||S.view==='saved') render();
+    if(S.view==='explore'||S.view==='saved'||S.view==='biz') render();
     if(pendingOpen){ const id=pendingOpen; pendingOpen=null; setTimeout(()=>{ if(findItem(id)) openItem(id); },700); }
   },e=>{ clearTimeout(timer); S.ready=true; S.error='Listings couldn’t load. '+(e.code==='permission-denied'?'The database rules haven’t been published yet.':'Try reloading the page.'); render(); });
 }

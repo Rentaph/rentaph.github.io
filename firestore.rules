@@ -6,11 +6,24 @@ service cloud.firestore {
     function isAdmin() { return signedIn() && exists(/databases/$(database)/documents/admins/$(me())); }
     function str(v, max) { return v is string && v.size() <= max; }
 
-    // Provider profile: public, only the owner edits it
+    // Provider profile and free business page: public, only the owner edits it
     match /providers/{uid} {
+      function d() { return request.resource.data; }
+      function opt(k, max) { return !(k in d()) || str(d()[k], max); }
+      function optBool(k) { return !(k in d()) || d()[k] is bool; }
+      function bizOk() {
+        return opt('bizCat', 40) && opt('about', 600) && opt('province', 40) && opt('city', 40)
+          && opt('barangay', 60) && opt('street', 120) && opt('area', 120) && opt('promo', 160)
+          && opt('messenger', 120) && opt('facebook', 160)
+          && optBool('listed') && optBool('delivery') && optBool('logo') && optBool('provider')
+          && (!('slug' in d()) || (d().slug is string && d().slug.matches('^[a-z0-9-]{3,60}$')))
+          && (!('pay' in d()) || (d().pay is list && d().pay.size() <= 6))
+          && (!('hours' in d()) || d().hours == null || (d().hours is map && d().hours.days is list && d().hours.days.size() <= 7
+              && str(d().hours.open, 5) && str(d().hours.close, 5)));
+      }
       allow read: if true;
       allow write: if signedIn() && me() == uid
-        && str(request.resource.data.providerName, 60) && str(request.resource.data.phone, 20);
+        && str(d().providerName, 60) && str(d().phone, 20) && bizOk();
     }
 
     // Listings: anyone can browse; owners create and edit their own; admins can remove
@@ -33,8 +46,10 @@ service cloud.firestore {
 
     // Listing photos (small compressed images)
     match /photos/{id} {
+      // biz-{uid} is a business logo: only that business can create it
+      function idOk() { return !id.matches('^biz-.*') || id == 'biz-' + me(); }
       allow read: if true;
-      allow create: if signedIn() && request.resource.data.ownerId == me()
+      allow create: if signedIn() && idOk() && request.resource.data.ownerId == me()
         && request.resource.data.data is string && request.resource.data.data.size() < 300000;
       allow update: if signedIn() && resource.data.ownerId == me() && request.resource.data.ownerId == me()
         && request.resource.data.data is string && request.resource.data.data.size() < 300000;
